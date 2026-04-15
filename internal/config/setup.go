@@ -23,6 +23,7 @@ type SetupOptions struct {
 type FileConfig struct {
 	Agent AgentConfig `json:"agent"`
 	Setup SetupConfig `json:"setup"`
+	Mcp   McpConfig   `json:"mcp,omitempty"`
 }
 
 type AgentConfig struct {
@@ -37,6 +38,22 @@ type SetupConfig struct {
 	BootstrapReady  bool `json:"bootstrapReady"`
 }
 
+type McpConfig struct {
+	Servers map[string]McpServerConfig `json:"servers,omitempty"`
+}
+
+type McpServerConfig struct {
+	Command           string            `json:"command,omitempty"`
+	Args              []string          `json:"args,omitempty"`
+	URL               string            `json:"url,omitempty"`
+	Headers           map[string]string `json:"headers,omitempty"`
+	OAuthClientID     string            `json:"oauthClientId,omitempty"`
+	OAuthClientSecret string            `json:"oauthClientSecret,omitempty"`
+	OAuthTokenURL     string            `json:"oauthTokenUrl,omitempty"`
+	OAuthRedirectURI  string            `json:"oauthRedirectUri,omitempty"`
+	OAuthScopes       []string          `json:"oauthScopes,omitempty"`
+}
+
 func InitializeWorkspace(paths Paths, options SetupOptions) error {
 	if strings.TrimSpace(options.WorkspaceDir) == "" {
 		options.WorkspaceDir = paths.WorkspaceDir
@@ -49,6 +66,9 @@ func InitializeWorkspace(paths Paths, options SetupOptions) error {
 		return err
 	}
 	if err := ensureDir(paths.SessionsDir); err != nil {
+		return err
+	}
+	if err := ensureDir(paths.WorkspaceSkillsDir); err != nil {
 		return err
 	}
 
@@ -163,4 +183,21 @@ func LoadFileConfig(paths Paths) (FileConfig, error) {
 	}
 
 	return cfg, nil
+}
+
+func SaveFileConfig(paths Paths, cfg FileConfig) error {
+	data, err := json.MarshalIndent(cfg, "", "  ")
+	if err != nil {
+		return fmt.Errorf("encode config: %w", err)
+	}
+
+	if err := os.MkdirAll(filepath.Dir(paths.ConfigPath), 0o700); err != nil {
+		return fmt.Errorf("create config directory: %w", err)
+	}
+
+	if err := os.WriteFile(paths.ConfigPath, append(data, '\n'), 0o600); err != nil {
+		return fmt.Errorf("write config: %w", err)
+	}
+
+	return nil
 }

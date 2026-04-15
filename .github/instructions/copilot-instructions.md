@@ -43,6 +43,26 @@ Key source files to check:
 - Code is edited on macOS, packaged via `./vm/package-vm-bundle.sh`, and built on an elementary OS VM via meson + ninja.
 - When fixing Vala errors, always verify the fix compiles with `ninja -C build` on the VM before marking as done.
 
+### Linker: libm Required
+
+The project uses `libm` (`-lm`) for math functions (e.g. `sqrt`). It is declared in `meson.build` as:
+
+```meson
+m_dep = meson.get_compiler('c').find_library('m', required: true)
+```
+
+and included in the `dependencies` array. **Do not remove it.** If you see `undefined reference to symbol 'sqrt@@GLIBC_2.17'` or similar math symbols at link time, the `m_dep` is missing.
+
+### GTK4 CSS Limitations
+
+GTK4's CSS engine does **not** support:
+- `text-shadow`
+- `box-shadow`
+- `gap` (use `spacing` on `Gtk.Box` instead)
+- Two-value `padding` shorthand (use `padding-top`, `padding-bottom`, etc.)
+
+Never add these properties — they are silently ignored or cause warnings.
+
 ### VM Deploy Workflow (CRITICAL)
 
 The full command to deploy and test on the VM is:

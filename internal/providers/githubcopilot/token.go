@@ -93,6 +93,7 @@ func ResolveAPIToken(params ResolveParams) (APIToken, error) {
 	}
 	request.Header.Set("Accept", "application/json")
 	request.Header.Set("Authorization", "Bearer "+githubToken)
+	request.Header.Set("User-Agent", "elementary-claw/1.0")
 
 	response, err := client.Do(request)
 	if err != nil {

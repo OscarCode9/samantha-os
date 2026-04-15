@@ -2,12 +2,16 @@ package runtime
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"strings"
 
+	"github.com/oscarcode/elementary-claw/internal/config"
 	"github.com/oscarcode/elementary-claw/internal/session"
+	"github.com/oscarcode/elementary-claw/internal/tools"
 )
 
 // sseChunk represents a single parsed SSE chunk from a streaming chat
@@ -214,4 +218,140 @@ func writeSSEDone(w io.Writer) {
 	if flusher, ok := w.(interface{ Flush() }); ok {
 		flusher.Flush()
 	}
+}
+
+// handleStreamingChatCompletions runs the tool-call loop with a streaming
+// upstream and forwards SSE events from the final (non-tool-call) response
+// directly to the client.
+func handleStreamingChatCompletions(
+	response http.ResponseWriter,
+	request *http.Request,
+	paths config.Paths,
+	cfg config.FileConfig,
+	target upstreamTarget,
+	payload map[string]any,
+	store *session.Store,
+	registry *tools.Registry,
+) {
+	incomingMessages, err := decodeRequestMessages(payload["messages"])
+	if err != nil {
+		http.Error(response, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	sessionID := resolveSessionID(request, payload, store)
+	record, err := loadOrCreateSession(store, sessionID)
+	if err != nil {
+		http.Error(response, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	allMessages := append(cloneMessages(record.Messages), incomingMessages...)
+	record.Messages = append(record.Messages, incomingMessages...)
+
+	delete(payload, "session_id")
+	removeSessionMetadata(payload)
+
+	if registry != nil && registry.Count() > 0 {
+		payload["tools"] = registry.Definitions()
+	}
+	// Always request streaming from upstream.
+	payload["stream"] = true
+
+	upstreamURL := buildUpstreamURL(target, request.URL.Path)
+	if trimmedQuery := strings.TrimSpace(request.URL.RawQuery); trimmedQuery != "" {
+		upstreamURL += "?" + trimmedQuery
+	}
+
+	for iteration := 0; iteration < maxToolCallIterations; iteration++ {
+		payload["messages"] = encodeMessages(allMessages)
+
+		mergedBody, err := json.Marshal(payload)
+		if err != nil {
+			http.Error(response, "marshal request: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		proxyRequest, err := http.NewRequestWithContext(request.Context(), http.MethodPost, upstreamURL, bytes.NewReader(mergedBody))
+		if err != nil {
+			http.Error(response, err.Error(), http.StatusBadGateway)
+			return
+		}
+		copyRequestHeaders(proxyRequest.Header, request.Header)
+		proxyRequest.Header.Set("Content-Type", "application/json")
+		proxyRequest.Header.Set("Accept", "text/event-stream")
+		applyTargetHeaders(proxyRequest.Header, target.Headers)
+
+		proxyResponse, err := http.DefaultClient.Do(proxyRequest)
+		if err != nil {
+			http.Error(response, err.Error(), http.StatusBadGateway)
+			return
+		}
+
+		// Non-2xx: forward the error body as plain JSON and stop.
+		if proxyResponse.StatusCode < 200 || proxyResponse.StatusCode >= 300 {
+			errorBody, _ := io.ReadAll(proxyResponse.Body)
+			proxyResponse.Body.Close()
+			http.Error(response, string(errorBody), proxyResponse.StatusCode)
+			return
+		}
+
+		acc, err := consumeSSEStream(proxyResponse.Body)
+		proxyResponse.Body.Close()
+		if err != nil {
+			http.Error(response, "read upstream stream: "+err.Error(), http.StatusBadGateway)
+			return
+		}
+
+		assistantMsg := acc.message()
+		allMessages = append(allMessages, assistantMsg)
+		record.Messages = append(record.Messages, assistantMsg)
+
+		// No tool calls — this is the final response; stream it to the client.
+		if !acc.hasToolCalls() || acc.finishReason == "stop" {
+			// Persist before writing so errors can still return HTTP 5xx.
+			if _, err := store.Save(&record); err != nil {
+				http.Error(response, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			response.Header().Set("Content-Type", "text/event-stream")
+			response.Header().Set("Cache-Control", "no-cache")
+			response.Header().Set("X-Accel-Buffering", "no")
+			response.Header().Set("X-Session-ID", sessionID)
+			response.WriteHeader(http.StatusOK)
+			replaySSELines(response, acc.rawLines)
+			return
+		}
+
+		// Registry missing — can't execute tools; stream what we have.
+		if registry == nil {
+			if _, err := store.Save(&record); err != nil {
+				http.Error(response, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			response.Header().Set("Content-Type", "text/event-stream")
+			response.Header().Set("Cache-Control", "no-cache")
+			response.Header().Set("X-Accel-Buffering", "no")
+			response.Header().Set("X-Session-ID", sessionID)
+			response.WriteHeader(http.StatusOK)
+			replaySSELines(response, acc.rawLines)
+			return
+		}
+
+		// Execute tool calls and feed results back into the loop.
+		for _, tc := range assistantMsg.ToolCalls {
+			toolResult := executeToolCall(request.Context(), registry, tc)
+			allMessages = append(allMessages, toolResult)
+			record.Messages = append(record.Messages, toolResult)
+		}
+	}
+
+	// Safety: iteration limit hit — persist and return empty done.
+	_, _ = store.Save(&record)
+	response.Header().Set("Content-Type", "text/event-stream")
+	response.Header().Set("Cache-Control", "no-cache")
+	response.Header().Set("X-Session-ID", sessionID)
+	response.WriteHeader(http.StatusOK)
+	writeSSEDone(response)
 }

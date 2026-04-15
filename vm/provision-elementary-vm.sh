@@ -51,6 +51,13 @@ if command -v xdg-mime >/dev/null 2>&1; then
   xdg-mime default org.gnome.Epiphany.desktop application/xhtml+xml >/dev/null 2>&1 || true
 fi
 
+# Also register for root (the app runs as root via sudo during initial setup)
+echo "[2.2/6] Registering default browser for root user..."
+sudo mkdir -p /root/.local/share
+sudo bash -c 'xdg-mime default org.gnome.Epiphany.desktop x-scheme-handler/http' 2>/dev/null || true
+sudo bash -c 'xdg-mime default org.gnome.Epiphany.desktop x-scheme-handler/https' 2>/dev/null || true
+sudo bash -c 'xdg-mime default org.gnome.Epiphany.desktop text/html' 2>/dev/null || true
+
 export GOTOOLCHAIN=auto
 
 echo "[3/6] Building patched Initial Setup..."
@@ -71,13 +78,27 @@ sudo fc-cache -f /usr/share/fonts/truetype/io.elementary.initial-setup || true
 echo "[5/6] Building elementary-claw runtime..."
 cd "$ROOT_DIR"
 go version
+# Kill any orphan claw processes holding the port before we replace the binary
+echo "  Stopping any running claw processes..."
+sudo pkill -x claw 2>/dev/null || true
+systemctl --user stop elementary-claw.service 2>/dev/null || true
+sleep 1
+
 go build -o claw ./cmd/claw
 
 echo "[6/6] Installing elementary-claw runtime and user service..."
 sudo install -d /usr/local/bin
 sudo install -m 0755 claw /usr/local/bin/claw
+
+# Verify the new binary works before wiring up the service
+echo "  Verifying new binary..."
+/usr/local/bin/claw version || { echo "ERROR: claw binary failed self-test"; exit 1; }
+
 sudo install -d /etc/systemd/user
 sudo install -m 0644 "$SERVICE_SOURCE" /etc/systemd/user/elementary-claw.service
+# Keep both paths in sync (/etc/xdg/systemd is where elementary OS looks)
+sudo install -d /etc/xdg/systemd/user
+sudo install -m 0644 "$SERVICE_SOURCE" /etc/xdg/systemd/user/elementary-claw.service
 sudo systemctl --global enable elementary-claw.service
 
 if systemctl --user daemon-reload >/dev/null 2>&1; then

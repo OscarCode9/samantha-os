@@ -31,6 +31,9 @@ func resolveUpstreamTarget(paths config.Paths, cfg config.FileConfig) (upstreamT
 
 		headers := make(http.Header)
 		headers.Set("Authorization", "Bearer "+token.Token)
+		headers.Set("Copilot-Integration-Id", "vscode-chat")
+		headers.Set("Editor-Version", "vscode/1.96.0")
+		headers.Set("Editor-Plugin-Version", "copilot/1.0.0")
 		return upstreamTarget{
 			BaseURL: strings.TrimRight(token.BaseURL, "/"),
 			Headers: headers,
@@ -61,12 +64,14 @@ func buildUpstreamURL(target upstreamTarget, requestPath string) string {
 
 	basePath := strings.TrimRight(parsed.Path, "/")
 	upstreamPath := requestPath
-	if strings.HasSuffix(strings.ToLower(basePath), "/v1") {
-		if requestPath == "/v1" {
-			upstreamPath = ""
-		} else if strings.HasPrefix(requestPath, "/v1/") {
-			upstreamPath = strings.TrimPrefix(requestPath, "/v1")
-		}
+
+	// Always strip /v1 prefix from the incoming request path.
+	// The base URL determines whether /v1 is present (e.g. copilot-proxy
+	// includes /v1, while github-copilot does not).
+	if requestPath == "/v1" {
+		upstreamPath = ""
+	} else if strings.HasPrefix(requestPath, "/v1/") {
+		upstreamPath = strings.TrimPrefix(requestPath, "/v1")
 	}
 
 	parsed.Path = basePath + upstreamPath

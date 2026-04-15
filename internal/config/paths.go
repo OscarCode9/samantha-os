@@ -26,6 +26,12 @@ type Paths struct {
 	WorkspaceSkillsDir    string // project-local skills
 }
 
+// McpTokenPath returns the path where a cached OAuth token for an MCP server
+// named serverName is stored.
+func (p Paths) McpTokenPath(serverName string) string {
+	return filepath.Join(p.CredentialsDir, "mcp-"+serverName+".token.json")
+}
+
 func DefaultPaths() (Paths, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {

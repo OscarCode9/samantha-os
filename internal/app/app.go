@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/oscarcode/elementary-claw/internal/bootstrap"
 	"github.com/oscarcode/elementary-claw/internal/config"
+	"github.com/oscarcode/elementary-claw/internal/mcp"
 	"github.com/oscarcode/elementary-claw/internal/providers/copilotproxy"
 	"github.com/oscarcode/elementary-claw/internal/providers/githubcopilot"
 	"github.com/oscarcode/elementary-claw/internal/runtime"
@@ -55,6 +57,8 @@ func (app *App) Run(args []string) error {
 		return app.runTools(args[1:])
 	case "skills":
 		return app.runSkills(args[1:])
+	case "mcp":
+		return app.runMcp(args[1:])
 	case "version", "--version", "-v":
 		fmt.Println("elementary-claw dev")
 		return nil
@@ -293,7 +297,8 @@ func (app *App) runCopilotProxyProvider(args []string) error {
 }
 
 // buildToolRegistry creates a Registry with all built-in tools wired to the
-// given workspace root directory.
+// given workspace root directory.  It also loads any remote MCP tools
+// declared in the config file.
 func (app *App) buildToolRegistry(workdir string) *tools.Registry {
 	if workdir == "" {
 		workdir = app.paths.HomeDir
@@ -309,6 +314,16 @@ func (app *App) buildToolRegistry(workdir string) *tools.Registry {
 	registry.Register(tools.NewEditFileTool(workdir))
 	registry.Register(tools.NewWebFetchTool())
 	registry.Register(tools.NewNotifyTool())
+
+	// Load remote MCP tools from config (best-effort: log on error, don't abort).
+	cfg, err := config.LoadFileConfig(app.paths)
+	if err == nil && len(cfg.Mcp.Servers) > 0 {
+		if err := mcp.LoadTools(context.Background(), app.paths, cfg, registry); err != nil {
+			// Some servers may have failed but others loaded fine.
+			fmt.Fprintf(os.Stderr, "warning: loading MCP tools: %v\n", err)
+		}
+	}
+
 	return registry
 }
 
@@ -517,6 +532,116 @@ func (app *App) runTools(args []string) error {
 	}
 }
 
+func (app *App) runMcp(args []string) error {
+	if len(args) == 0 || args[0] == "help" || args[0] == "--help" || args[0] == "-h" {
+		fmt.Print(mcpHelp)
+		return nil
+	}
+
+	switch args[0] {
+	case "auth":
+		if len(args) < 2 {
+			return fmt.Errorf("usage: claw mcp auth <server-name>")
+		}
+		return app.runMcpAuth(args[1])
+
+	case "list-tools":
+		if len(args) < 2 {
+			return fmt.Errorf("usage: claw mcp list-tools <server-name>")
+		}
+		return app.runMcpListTools(args[1])
+
+	default:
+		return fmt.Errorf("unknown mcp subcommand %q\n\n%s", args[0], mcpHelp)
+	}
+}
+
+// runMcpAuth runs the OAuth2 authorization code + PKCE browser flow for the
+// named MCP server and caches the resulting token.
+func (app *App) runMcpAuth(serverName string) error {
+	cfg, err := config.LoadFileConfig(app.paths)
+	if err != nil {
+		return fmt.Errorf("load config: %w", err)
+	}
+
+	srv, ok := cfg.Mcp.Servers[serverName]
+	if !ok {
+		return fmt.Errorf("MCP server %q not found in config — add it to ~/.openclaw/openclaw.json first", serverName)
+	}
+	if srv.OAuthClientID == "" {
+		return fmt.Errorf("MCP server %q has no oauthClientId configured", serverName)
+	}
+
+	authEndpoint, tokenEndpoint := srv.OAuthTokenURL, srv.OAuthTokenURL
+	if authEndpoint == "" {
+		authEndpoint, tokenEndpoint, err = mcp.DiscoverMetadata(mcp.ExtractIssuer(srv.URL))
+		if err != nil {
+			return fmt.Errorf("discover OAuth metadata: %w", err)
+		}
+	}
+
+	scopes := "mcp:tools"
+	if len(srv.OAuthScopes) > 0 {
+		scopes = strings.Join(srv.OAuthScopes, " ")
+	}
+
+	return mcp.RunAuthFlow(mcp.AuthFlowParams{
+		ServerName:    serverName,
+		ClientID:      srv.OAuthClientID,
+		ClientSecret:  srv.OAuthClientSecret,
+		AuthEndpoint:  authEndpoint,
+		TokenEndpoint: tokenEndpoint,
+		Scopes:        scopes,
+		TokenPath:     app.paths.McpTokenPath(serverName),
+		RedirectURI:   srv.OAuthRedirectURI,
+	})
+}
+
+// runMcpListTools lists all tools exposed by the named MCP server.
+func (app *App) runMcpListTools(serverName string) error {
+	cfg, err := config.LoadFileConfig(app.paths)
+	if err != nil {
+		return fmt.Errorf("load config: %w", err)
+	}
+
+	srv, ok := cfg.Mcp.Servers[serverName]
+	if !ok {
+		return fmt.Errorf("MCP server %q not found in config", serverName)
+	}
+
+	authValue, err := mcp.ResolveAuth(app.paths, serverName, srv)
+	if err != nil {
+		return err
+	}
+
+	client := mcp.NewClient(srv.URL, authValue)
+	ctx := context.Background()
+
+	if err := client.Initialize(ctx); err != nil {
+		return err
+	}
+
+	toolInfos, err := client.ListTools(ctx)
+	if err != nil {
+		return err
+	}
+
+	if len(toolInfos) == 0 {
+		fmt.Println("no tools exposed by this server")
+		return nil
+	}
+
+	fmt.Printf("Tools from MCP server %q (%d):\n", serverName, len(toolInfos))
+	for _, t := range toolInfos {
+		desc := t.Description
+		if len(desc) > 80 {
+			desc = desc[:77] + "..."
+		}
+		fmt.Printf("  %-32s %s\n", t.Name, desc)
+	}
+	return nil
+}
+
 func (app *App) printRootHelp() error {
 	fmt.Print(rootHelp)
 	return nil
@@ -576,6 +701,13 @@ type discardWriter struct{}
 func (discardWriter) Write(data []byte) (int, error) {
 	return len(data), nil
 }
+
+const mcpHelp = `elementary-claw mcp
+
+Subcommands:
+  auth <name>           Run OAuth2 browser flow and cache token for a remote MCP server
+  list-tools <name>     List tools exposed by a remote MCP server
+`
 
 const rootHelp = `elementary-claw CLI
 

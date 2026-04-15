@@ -25,7 +25,7 @@ func TestBuildUpstreamURLKeepsV1ForNativeBase(t *testing.T) {
 	}
 
 	got := buildUpstreamURL(target, "/v1/chat/completions")
-	want := "https://api.individual.githubcopilot.com/v1/chat/completions"
+	want := "https://api.individual.githubcopilot.com/chat/completions"
 	if got != want {
 		t.Fatalf("unexpected upstream URL: got %s want %s", got, want)
 	}

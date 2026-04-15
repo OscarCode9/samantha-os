@@ -28,8 +28,8 @@ func TestDefaultPathsStructure(t *testing.T) {
 	if !strings.HasSuffix(paths.ConfigPath, "openclaw.json") {
 		t.Fatalf("ConfigPath should end with openclaw.json: %s", paths.ConfigPath)
 	}
-	if !strings.Contains(paths.SkillsDir, "skills") {
-		t.Fatalf("SkillsDir should contain 'skills': %s", paths.SkillsDir)
+	if !strings.Contains(paths.WorkspaceSkillsDir, "skills") {
+		t.Fatalf("WorkspaceSkillsDir should contain 'skills': %s", paths.WorkspaceSkillsDir)
 	}
 	if !strings.HasSuffix(paths.AgentPath, "AGENTS.md") {
 		t.Fatalf("AgentPath should end with AGENTS.md: %s", paths.AgentPath)
@@ -53,9 +53,9 @@ func TestDefaultPathsConsistency(t *testing.T) {
 	if !strings.HasPrefix(paths.SessionsDir, paths.StateDir) {
 		t.Fatalf("SessionsDir should be under StateDir: %s vs %s", paths.SessionsDir, paths.StateDir)
 	}
-	// SkillsDir should be under WorkspaceDir
-	if !strings.HasPrefix(paths.SkillsDir, paths.WorkspaceDir) {
-		t.Fatalf("SkillsDir should be under WorkspaceDir: %s vs %s", paths.SkillsDir, paths.WorkspaceDir)
+	// WorkspaceSkillsDir should be under WorkspaceDir
+	if !strings.HasPrefix(paths.WorkspaceSkillsDir, paths.WorkspaceDir) {
+		t.Fatalf("WorkspaceSkillsDir should be under WorkspaceDir: %s vs %s", paths.WorkspaceSkillsDir, paths.WorkspaceDir)
 	}
 }
 
@@ -82,7 +82,9 @@ func testPaths(root string) Paths {
 		ToolsPath:             filepath.Join(workspaceDir, "TOOLS.md"),
 		HeartbeatPath:         filepath.Join(workspaceDir, "HEARTBEAT.md"),
 		BootstrapPath:         filepath.Join(workspaceDir, "BOOTSTRAP.md"),
-		SkillsDir:             filepath.Join(workspaceDir, "skills"),
+		BundledSkillsDir:      filepath.Join(stateDir, "skills", "bundled"),
+		ManagedSkillsDir:      filepath.Join(stateDir, "skills", "managed"),
+		WorkspaceSkillsDir:    filepath.Join(workspaceDir, "skills"),
 	}
 }
 
@@ -123,7 +125,7 @@ func TestInitializeWorkspaceCreatesFiles(t *testing.T) {
 	}
 
 	// Skills directory should exist
-	if _, err := os.Stat(paths.SkillsDir); err != nil {
+	if _, err := os.Stat(paths.WorkspaceSkillsDir); err != nil {
 		t.Fatalf("skills directory should exist: %s", err)
 	}
 }

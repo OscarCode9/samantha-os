@@ -41,6 +41,7 @@ type Record struct {
 	Kind      string    `json:"kind"`
 	Title     string    `json:"title"`
 	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 	Messages  []Message `json:"messages"`
 }
 
@@ -52,10 +53,19 @@ func NewStore(paths config.Paths) *Store {
 	return &Store{paths: paths}
 }
 
-func (store *Store) Save(record Record) (string, error) {
+func (store *Store) Save(record *Record) (string, error) {
 	if err := os.MkdirAll(store.paths.SessionsDir, 0o700); err != nil {
 		return "", fmt.Errorf("create sessions directory: %w", err)
 	}
+
+	now := time.Now()
+	if record.ID == "" {
+		record.ID = fmt.Sprintf("%d", now.UnixNano())
+	}
+	if record.CreatedAt.IsZero() {
+		record.CreatedAt = now
+	}
+	record.UpdatedAt = now
 
 	data, err := json.MarshalIndent(record, "", "  ")
 	if err != nil {
@@ -67,25 +77,25 @@ func (store *Store) Save(record Record) (string, error) {
 		return "", fmt.Errorf("write session %s: %w", record.ID, err)
 	}
 
-	return path, nil
+	return record.ID, nil
 }
 
-func (store *Store) Get(id string) (Record, error) {
+func (store *Store) Get(id string) (*Record, error) {
 	path := filepath.Join(store.paths.SessionsDir, id+".json")
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return Record{}, fmt.Errorf("session %q not found: %w", id, os.ErrNotExist)
+			return nil, nil
 		}
-		return Record{}, fmt.Errorf("read session file %s: %w", id, err)
+		return nil, fmt.Errorf("read session file %s: %w", id, err)
 	}
 
 	var record Record
 	if err := json.Unmarshal(data, &record); err != nil {
-		return Record{}, fmt.Errorf("decode session file %s: %w", id, err)
+		return nil, fmt.Errorf("decode session file %s: %w", id, err)
 	}
 
-	return record, nil
+	return &record, nil
 }
 
 func (store *Store) List() ([]Record, error) {
@@ -116,7 +126,7 @@ func (store *Store) List() ([]Record, error) {
 	}
 
 	sort.Slice(items, func(i, j int) bool {
-		return items[i].CreatedAt.Before(items[j].CreatedAt)
+		return items[i].UpdatedAt.After(items[j].UpdatedAt)
 	})
 
 	return items, nil

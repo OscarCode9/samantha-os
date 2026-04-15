@@ -491,5 +491,8 @@ func makeTestPaths(root string) config.Paths {
 		ToolsPath:             filepath.Join(workspaceDir, "TOOLS.md"),
 		HeartbeatPath:         filepath.Join(workspaceDir, "HEARTBEAT.md"),
 		BootstrapPath:         filepath.Join(workspaceDir, "BOOTSTRAP.md"),
+		BundledSkillsDir:      filepath.Join(stateDir, "skills", "bundled"),
+		ManagedSkillsDir:      filepath.Join(stateDir, "skills", "managed"),
+		WorkspaceSkillsDir:    filepath.Join(workspaceDir, "skills"),
 	}
 }

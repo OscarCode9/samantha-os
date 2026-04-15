@@ -158,7 +158,7 @@ func newHandler(paths config.Paths, store *session.Store, registry *tools.Regist
 		}
 
 		if stream, _ := payload["stream"].(bool); stream {
-			http.Error(response, "streaming chat completions are not implemented yet", http.StatusNotImplemented)
+			handleStreamingChatCompletions(response, request, paths, cfg, target, payload, store, registry)
 			return
 		}
 
@@ -269,7 +269,7 @@ func newHandler(paths config.Paths, store *session.Store, registry *tools.Regist
 
 		// Persist the full conversation.
 		if lastStatusCode >= 200 && lastStatusCode < 300 {
-			if _, err := store.Save(record); err != nil {
+			if _, err := store.Save(&record); err != nil {
 				http.Error(response, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -430,11 +430,11 @@ func resolveSessionID(request *http.Request, payload map[string]any, store *sess
 
 func loadOrCreateSession(store *session.Store, sessionID string) (session.Record, error) {
 	record, err := store.Get(sessionID)
-	if err == nil {
-		return record, nil
-	}
-	if !errors.Is(err, os.ErrNotExist) {
+	if err != nil {
 		return session.Record{}, err
+	}
+	if record != nil {
+		return *record, nil
 	}
 
 	title := "Conversation"

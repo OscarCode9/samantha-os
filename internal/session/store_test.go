@@ -244,7 +244,7 @@ func TestListIgnoresNonJSONFiles(t *testing.T) {
 	store.Save(&Record{ID: "valid", Kind: "chat"})
 
 	// Create a non-JSON file in the sessions directory
-	dir := store.sessionsDir
+	dir := store.paths.SessionsDir
 	writeTestFile(t, filepath.Join(dir, "not-json.txt"), "hello")
 	writeTestFile(t, filepath.Join(dir, ".hidden"), "hidden")
 

@@ -39,12 +39,12 @@ func GenerateFirstMessage(paths config.Paths, store *session.Store, explicitMess
 		},
 	}
 
-	path, err := store.Save(record)
+	id, err := store.Save(&record)
 	if err != nil {
 		return Result{}, err
 	}
 
-	return Result{Path: path}, nil
+	return Result{Path: id}, nil
 }
 
 func EnsureFirstMessage(paths config.Paths, store *session.Store, explicitMessage string) (Result, bool, error) {
@@ -55,10 +55,12 @@ func EnsureFirstMessage(paths config.Paths, store *session.Store, explicitMessag
 		return Result{}, false, fmt.Errorf("stat bootstrap instructions: %w", err)
 	}
 
-	if _, err := store.Get("bootstrap"); err == nil {
-		return Result{}, false, nil
-	} else if !errors.Is(err, os.ErrNotExist) {
+	record, err := store.Get("bootstrap")
+	if err != nil {
 		return Result{}, false, err
+	}
+	if record != nil {
+		return Result{}, false, nil
 	}
 
 	result, err := GenerateFirstMessage(paths, store, explicitMessage)
