@@ -1,0 +1,13 @@
+[Unit]
+Description=elementary-claw user runtime
+After=default.target
+
+[Service]
+Type=simple
+ExecStartPre=/usr/local/bin/claw bootstrap ensure
+ExecStart=/usr/local/bin/claw gateway serve --listen 127.0.0.1:4389
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
