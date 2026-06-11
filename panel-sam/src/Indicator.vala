@@ -148,11 +148,445 @@ public class Sam.Indicator : Wingpanel.Indicator {
     }
 
     public override void opened () {
-        sync_popover_state ();
-        if (query_entry != null) {
-            query_entry.grab_focus ();
-        }
         play_chat_open_sound ();
+        check_auth_and_sync ();
+    }
+
+    private void check_auth_and_sync () {
+        set_controls_sensitive (false);
+        query_entry.placeholder_text = "Verificando conexión…";
+        gateway.check_auth_status.begin ((obj, res) => {
+            bool auth_configured = false;
+            try {
+                gateway.check_auth_status.end (res);
+                auth_configured = gateway.is_auth_configured ();
+            } catch (GLib.Error e) {
+                warning ("Could not check auth status: %s", e.message);
+            }
+
+            GLib.Idle.add (() => {
+                if (auth_configured) {
+                    set_controls_sensitive (true);
+                    query_entry.placeholder_text = "Pregunta algo…";
+                    sync_popover_state ();
+                    if (query_entry != null) {
+                        query_entry.grab_focus ();
+                    }
+                } else {
+                    query_entry.placeholder_text = "Conecta un proveedor de IA…";
+                    set_controls_sensitive (false);
+                    show_provider_connect_screen ();
+                }
+                return GLib.Source.REMOVE;
+            });
+        });
+    }
+
+    private void show_provider_connect_screen () {
+        clear_results ();
+
+        var title = new Gtk.Label ("Conectar un proveedor de IA") {
+            halign = Gtk.Align.START,
+            xalign = 0.0f,
+            wrap = true,
+            max_width_chars = 44
+        };
+        title.get_style_context ().add_class ("sam-provider-title");
+
+        var copy = new Gtk.Label (
+            "Para comenzar a usar Samantha, conecta tu cuenta de GitHub Copilot o ingresa tus credenciales de OpenAI."
+        ) {
+            halign = Gtk.Align.START,
+            xalign = 0.0f,
+            wrap = true,
+            max_width_chars = 44
+        };
+        copy.get_style_context ().add_class ("sam-provider-copy");
+
+        var status_label = new Gtk.Label ("") {
+            halign = Gtk.Align.START,
+            xalign = 0.0f,
+            wrap = true,
+            max_width_chars = 44,
+            visible = false
+        };
+        status_label.get_style_context ().add_class ("sam-provider-status");
+
+        // GitHub Copilot section
+        var github_btn = new Gtk.Button.with_label ("Conectar con GitHub Copilot") {
+            halign = Gtk.Align.START
+        };
+        github_btn.get_style_context ().add_class ("sam-provider-btn");
+
+        // GitHub flow UI elements
+        var github_code_box = new Gtk.Box (Gtk.Orientation.VERTICAL, 6) {
+            visible = false
+        };
+        var github_url_hint = new Gtk.Label ("Ingresa este código en github.com/login/device:") {
+            halign = Gtk.Align.START,
+            xalign = 0.0f,
+            wrap = true,
+            max_width_chars = 44
+        };
+        github_url_hint.get_style_context ().add_class ("sam-provider-copy");
+        
+        var github_code_lbl = new Gtk.Label ("") {
+            halign = Gtk.Align.CENTER,
+            xalign = 0.5f,
+            wrap = false,
+            selectable = true
+        };
+        github_code_lbl.get_style_context ().add_class ("sam-provider-title");
+
+        var github_open_btn = new Gtk.Button.with_label ("Abrir GitHub en el navegador") {
+            halign = Gtk.Align.START
+        };
+        github_open_btn.get_style_context ().add_class ("sam-provider-btn");
+
+        github_code_box.pack_start (github_url_hint, false, false, 0);
+        github_code_box.pack_start (github_code_lbl, false, false, 8);
+        github_code_box.pack_start (github_open_btn, false, false, 0);
+
+        // OpenAI/ChatGPT section
+        var openai_btn = new Gtk.Button.with_label ("Conectar con OpenAI / ChatGPT") {
+            halign = Gtk.Align.START
+        };
+        openai_btn.get_style_context ().add_class ("sam-provider-btn");
+
+        // We can reuse the sub-revealers or nested forms for OpenAI connection:
+        // 1. ChatGPT subscription
+        var subscription_hint = new Gtk.Label (
+            "Abriremos ChatGPT en tu navegador. Cuando termine, copia la URL completa de redirección y pégala aquí."
+        ) {
+            halign = Gtk.Align.START,
+            xalign = 0.0f,
+            wrap = true,
+            max_width_chars = 44
+        };
+        subscription_hint.get_style_context ().add_class ("sam-provider-copy");
+
+        var redirect_url_entry = new Gtk.Entry () {
+            placeholder_text = "http://localhost:1455/auth/callback?code=...",
+            hexpand = true,
+            has_frame = false
+        };
+        redirect_url_entry.get_style_context ().add_class ("sam-provider-entry");
+
+        var finish_subscription_btn = new Gtk.Button.with_label ("Guardar y conectar") {
+            halign = Gtk.Align.START
+        };
+        finish_subscription_btn.get_style_context ().add_class ("sam-provider-btn");
+
+        var openai_sub_row = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 8);
+        openai_sub_row.pack_start (redirect_url_entry, true, true, 0);
+        openai_sub_row.pack_start (finish_subscription_btn, false, false, 0);
+
+        var openai_sub_box = new Gtk.Box (Gtk.Orientation.VERTICAL, 8);
+        openai_sub_box.pack_start (subscription_hint, false, false, 0);
+        openai_sub_box.pack_start (openai_sub_row, false, false, 0);
+
+        var openai_sub_revealer = new Gtk.Revealer () {
+            transition_type = Gtk.RevealerTransitionType.SLIDE_DOWN,
+            reveal_child = false
+        };
+        openai_sub_revealer.add (openai_sub_box);
+
+        // 2. API Key option
+        var api_key_reveal_btn = new Gtk.Button.with_label ("Usar API key de OpenAI en su lugar") {
+            halign = Gtk.Align.START
+        };
+        api_key_reveal_btn.get_style_context ().add_class ("sam-provider-btn");
+
+        var api_key_entry = new Gtk.Entry () {
+            placeholder_text = "sk-...",
+            hexpand = true,
+            has_frame = false,
+            visibility = false
+        };
+        api_key_entry.get_style_context ().add_class ("sam-provider-entry");
+
+        var connect_api_key_btn = new Gtk.Button.with_label ("Guardar API key") {
+            halign = Gtk.Align.START
+        };
+        connect_api_key_btn.get_style_context ().add_class ("sam-provider-btn");
+
+        var openai_api_row = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 8);
+        openai_api_row.pack_start (api_key_entry, true, true, 0);
+        openai_api_row.pack_start (connect_api_key_btn, false, false, 0);
+
+        var openai_api_box = new Gtk.Box (Gtk.Orientation.VERTICAL, 8);
+        openai_api_box.pack_start (openai_api_row, false, false, 0);
+
+        var openai_api_revealer = new Gtk.Revealer () {
+            transition_type = Gtk.RevealerTransitionType.SLIDE_DOWN,
+            reveal_child = false
+        };
+        openai_api_revealer.add (openai_api_box);
+
+        var openai_options_box = new Gtk.Box (Gtk.Orientation.VERTICAL, 8) {
+            visible = false
+        };
+        var opt1_lbl = new Gtk.Label ("Opción 1: Cuenta ChatGPT Plus") {
+            halign = Gtk.Align.START,
+            xalign = 0.0f
+        };
+        opt1_lbl.get_style_context ().add_class ("sam-provider-title");
+        var chatgpt_auth_btn = new Gtk.Button.with_label ("Conectar con ChatGPT") {
+            halign = Gtk.Align.START
+        };
+        chatgpt_auth_btn.get_style_context ().add_class ("sam-provider-btn");
+        openai_options_box.pack_start (opt1_lbl, false, false, 0);
+        openai_options_box.pack_start (chatgpt_auth_btn, false, false, 0);
+        openai_options_box.pack_start (openai_sub_revealer, false, false, 0);
+        var opt2_lbl = new Gtk.Label ("Opción 2: API de OpenAI") {
+            halign = Gtk.Align.START,
+            xalign = 0.0f
+        };
+        opt2_lbl.get_style_context ().add_class ("sam-provider-title");
+        openai_options_box.pack_start (opt2_lbl, false, false, 4);
+        openai_options_box.pack_start (api_key_reveal_btn, false, false, 0);
+        openai_options_box.pack_start (openai_api_revealer, false, false, 0);
+
+        // Wire events!
+        string verification_uri = "";
+        string auth_url = "";
+
+        github_btn.clicked.connect (() => {
+            github_btn.sensitive = false;
+            openai_btn.sensitive = false;
+            openai_options_box.visible = false;
+            status_label.label = "Conectando con GitHub…";
+            status_label.visible = true;
+
+            gateway.request_github_device_code.begin ((obj, res) => {
+                string error_message = "";
+                GitHubDeviceCodeResponse device_resp = null;
+                try {
+                    device_resp = gateway.request_github_device_code.end (res);
+                } catch (GLib.Error e) {
+                    error_message = e.message;
+                }
+
+                GLib.Idle.add (() => {
+                    if (device_resp == null) {
+                        github_btn.sensitive = true;
+                        openai_btn.sensitive = true;
+                        status_label.label = "Error al contactar a GitHub: " + error_message;
+                        status_label.visible = true;
+                        return GLib.Source.REMOVE;
+                    }
+
+                    verification_uri = device_resp.verification_uri;
+                    github_code_lbl.set_markup ("<span size=\"xx-large\" weight=\"bold\">%s</span>".printf (device_resp.user_code));
+                    github_code_box.visible = true;
+                    status_label.label = "Autoriza la solicitud en tu navegador y regresa.";
+                    status_label.visible = true;
+
+                    try {
+                        Gtk.show_uri_on_window (null, verification_uri, Gdk.CURRENT_TIME);
+                    } catch (GLib.Error e) {
+                        warning ("Could not launch browser: %s", e.message);
+                    }
+
+                    gateway.poll_for_github_access_token.begin (
+                        device_resp.device_code,
+                        device_resp.interval,
+                        device_resp.expires_in,
+                        (obj2, res2) => {
+                            string token = "";
+                            string poll_error = "";
+                            try {
+                                token = gateway.poll_for_github_access_token.end (res2);
+                            } catch (GLib.Error e) {
+                                poll_error = e.message;
+                            }
+
+                            GLib.Idle.add (() => {
+                                if (token == "") {
+                                    github_btn.sensitive = true;
+                                    openai_btn.sensitive = true;
+                                    github_code_box.visible = false;
+                                    status_label.label = "Inicio de sesión cancelado o expirado: " + poll_error;
+                                    status_label.visible = true;
+                                    return GLib.Source.REMOVE;
+                                }
+
+                                status_label.label = "Conectando token con Samantha…";
+                                gateway.connect_github_copilot_token.begin (token, (obj3, res3) => {
+                                    string conn_error = "";
+                                    bool success = false;
+                                    try {
+                                        gateway.connect_github_copilot_token.end (res3);
+                                        success = true;
+                                    } catch (GLib.Error e) {
+                                        conn_error = e.message;
+                                    }
+
+                                    GLib.Idle.add (() => {
+                                        if (success) {
+                                            status_label.label = "Conectado con éxito. Reiniciando…";
+                                            GLib.Timeout.add (1500, () => {
+                                                check_auth_and_sync ();
+                                                return GLib.Source.REMOVE;
+                                            });
+                                        } else {
+                                            github_btn.sensitive = true;
+                                            openai_btn.sensitive = true;
+                                            github_code_box.visible = false;
+                                            status_label.label = "Error al guardar token: " + conn_error;
+                                        }
+                                        return GLib.Source.REMOVE;
+                                    });
+                                });
+                                return GLib.Source.REMOVE;
+                            });
+                        }
+                    );
+
+                    return GLib.Source.REMOVE;
+                });
+            });
+        });
+
+        github_open_btn.clicked.connect (() => {
+            if (verification_uri != "") {
+                try {
+                    Gtk.show_uri_on_window (null, verification_uri, Gdk.CURRENT_TIME);
+                } catch (GLib.Error e) {
+                    warning ("Could not launch browser: %s", e.message);
+                }
+            }
+        });
+
+        openai_btn.clicked.connect (() => {
+            openai_options_box.visible = !openai_options_box.visible;
+            github_code_box.visible = false;
+            github_btn.sensitive = true;
+            status_label.visible = false;
+        });
+
+        chatgpt_auth_btn.clicked.connect (() => {
+            chatgpt_auth_btn.sensitive = false;
+            status_label.label = "Abriendo conexión con ChatGPT…";
+            status_label.visible = true;
+
+            gateway.begin_openai_codex_subscription.begin ((obj, res) => {
+                string error_message = "";
+                string started_auth_url = "";
+                try {
+                    started_auth_url = gateway.begin_openai_codex_subscription.end (res);
+                } catch (GLib.Error e) {
+                    error_message = e.message;
+                }
+
+                GLib.Idle.add (() => {
+                    chatgpt_auth_btn.sensitive = true;
+                    if (started_auth_url == "") {
+                        status_label.label = "Error: " + error_message;
+                        return GLib.Source.REMOVE;
+                    }
+
+                    auth_url = started_auth_url;
+                    openai_sub_revealer.reveal_child = true;
+                    status_label.label = "Inicia sesión en ChatGPT y pega la URL final.";
+                    try {
+                        Gtk.show_uri_on_window (null, auth_url, Gdk.CURRENT_TIME);
+                    } catch (GLib.Error e) {
+                        warning ("Could not open browser: %s", e.message);
+                    }
+                    return GLib.Source.REMOVE;
+                });
+            });
+        });
+
+        finish_subscription_btn.clicked.connect (() => {
+            var raw_url = redirect_url_entry.text.strip ();
+            if (raw_url.length == 0) {
+                status_label.label = "Pega la URL completa para continuar.";
+                status_label.visible = true;
+                return;
+            }
+
+            finish_subscription_btn.sensitive = false;
+            status_label.label = "Guardando suscripción ChatGPT…";
+            gateway.finish_openai_codex_subscription.begin (raw_url, (obj, res) => {
+                string error_message = "";
+                bool success = false;
+                try {
+                    gateway.finish_openai_codex_subscription.end (res);
+                    success = true;
+                } catch (GLib.Error e) {
+                    error_message = e.message;
+                }
+
+                GLib.Idle.add (() => {
+                    finish_subscription_btn.sensitive = true;
+                    if (success) {
+                        status_label.label = "ChatGPT conectado con éxito. Reiniciando…";
+                        GLib.Timeout.add (1500, () => {
+                            check_auth_and_sync ();
+                            return GLib.Source.REMOVE;
+                        });
+                    } else {
+                        status_label.label = "Error: " + error_message;
+                    }
+                    return GLib.Source.REMOVE;
+                });
+            });
+        });
+
+        api_key_reveal_btn.clicked.connect (() => {
+            openai_api_revealer.reveal_child = !openai_api_revealer.reveal_child;
+        });
+
+        connect_api_key_btn.clicked.connect (() => {
+            var api_key = api_key_entry.text.strip ();
+            if (api_key.length == 0) {
+                status_label.label = "Pega tu API key de OpenAI.";
+                status_label.visible = true;
+                return;
+            }
+
+            connect_api_key_btn.sensitive = false;
+            status_label.label = "Guardando API key…";
+            gateway.connect_openai_codex_api_key.begin (api_key, (obj, res) => {
+                string error_message = "";
+                bool success = false;
+                try {
+                    gateway.connect_openai_codex_api_key.end (res);
+                    success = true;
+                } catch (GLib.Error e) {
+                    error_message = e.message;
+                }
+
+                GLib.Idle.add (() => {
+                    connect_api_key_btn.sensitive = true;
+                    if (success) {
+                        status_label.label = "API key conectada con éxito. Reiniciando…";
+                        GLib.Timeout.add (1500, () => {
+                            check_auth_and_sync ();
+                            return GLib.Source.REMOVE;
+                        });
+                    } else {
+                        status_label.label = "Error: " + error_message;
+                    }
+                    return GLib.Source.REMOVE;
+                });
+            });
+        });
+
+        var card = new Gtk.Box (Gtk.Orientation.VERTICAL, 10);
+        card.get_style_context ().add_class ("sam-provider-card");
+        card.pack_start (title, false, false, 0);
+        card.pack_start (copy, false, false, 0);
+        card.pack_start (github_btn, false, false, 0);
+        card.pack_start (github_code_box, false, false, 0);
+        card.pack_start (openai_btn, false, false, 0);
+        card.pack_start (openai_options_box, false, false, 0);
+        card.pack_start (status_label, false, false, 0);
+
+        result_container.add (card);
+        result_container.show_all ();
     }
 
     public override void closed () { }

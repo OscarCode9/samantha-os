@@ -279,3 +279,51 @@ func resolveGitHubToken(paths config.Paths, explicit string) (string, string, er
 
 	return "", "", errors.New("no GitHub token found in flags, environment, or auth store")
 }
+
+// SaveGitHubToken saves the GitHub token to the auth-profiles.json store.
+func SaveGitHubToken(paths config.Paths, token string) error {
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return errors.New("GitHub token must not be empty")
+	}
+
+	var store map[string]any
+	data, err := os.ReadFile(paths.AuthPath)
+	if err == nil {
+		_ = json.Unmarshal(data, &store)
+	}
+	if store == nil {
+		store = map[string]any{
+			"version":  1,
+			"profiles": map[string]any{},
+		}
+	}
+
+	profiles, _ := store["profiles"].(map[string]any)
+	if profiles == nil {
+		profiles = map[string]any{}
+	}
+
+	profiles["github-copilot:default"] = map[string]any{
+		"provider": "github-copilot",
+		"mode":     "active",
+		"type":     "oauth",
+		"token":    token,
+	}
+	store["profiles"] = profiles
+
+	if err := os.MkdirAll(filepath.Dir(paths.AuthPath), 0o700); err != nil {
+		return fmt.Errorf("create auth directory: %w", err)
+	}
+
+	payload, err := json.MarshalIndent(store, "", "  ")
+	if err != nil {
+		return fmt.Errorf("encode auth store: %w", err)
+	}
+
+	if err := os.WriteFile(paths.AuthPath, append(payload, '\n'), 0o600); err != nil {
+		return fmt.Errorf("write auth store: %w", err)
+	}
+
+	return nil
+}

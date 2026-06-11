@@ -8,6 +8,28 @@
  * user explicitly starts or resets the session.
  */
 
+public class Sam.GitHubDeviceCodeResponse : GLib.Object {
+    public string device_code { get; set; }
+    public string user_code { get; set; }
+    public string verification_uri { get; set; }
+    public int expires_in { get; set; }
+    public int interval { get; set; }
+
+    public GitHubDeviceCodeResponse (
+        string device_code,
+        string user_code,
+        string verification_uri,
+        int expires_in,
+        int interval
+    ) {
+        this.device_code = device_code;
+        this.user_code = user_code;
+        this.verification_uri = verification_uri;
+        this.expires_in = expires_in;
+        this.interval = interval;
+    }
+}
+
 public class Sam.GatewayClient : GLib.Object {
 
     public delegate void StreamUpdateCallback (string kind, string content);
@@ -17,18 +39,32 @@ public class Sam.GatewayClient : GLib.Object {
     private const string GATEWAY_OPENAI_CONNECT_URL = "http://127.0.0.1:4389/v1/providers/openai/connect";
     private const string GATEWAY_OPENAI_CODEX_INIT_URL = "http://127.0.0.1:4389/v1/providers/openai-codex/init";
     private const string GATEWAY_OPENAI_CODEX_EXCHANGE_URL = "http://127.0.0.1:4389/v1/providers/openai-codex/exchange";
+    private const string GATEWAY_GITHUB_CONNECT_URL = "http://127.0.0.1:4389/v1/providers/github-copilot/connect";
     private const string OPENAI_CTA_PREFIX = "__GITHUB_RATE_LIMIT__::";
+
+    private const string GITHUB_CLIENT_ID = "Iv1.b507a08c87ecfe98";
+    private const string GITHUB_DEVICE_CODE_URL = "https://github.com/login/device/code";
+    private const string GITHUB_ACCESS_TOKEN_URL = "https://github.com/login/oauth/access_token";
 
     private Soup.Session session;
     private string current_session_id;
     private string current_model = "gpt-5.4";
     private string current_provider = "github-copilot";
+    private bool current_auth_configured = false;
 
     construct {
         session = new Soup.Session () {
             timeout = 120
         };
         start_new_session ();
+    }
+
+    public bool is_auth_configured () {
+        return current_auth_configured;
+    }
+
+    public async void check_auth_status () throws GLib.Error {
+        yield refresh_runtime_profile ();
     }
 
     public void start_new_session () {
@@ -129,6 +165,147 @@ public class Sam.GatewayClient : GLib.Object {
                 current_provider = provider;
             }
         }
+        if (root_obj.has_member ("authConfigured")) {
+            current_auth_configured = root_obj.get_boolean_member ("authConfigured");
+        }
+    }
+
+    public async void connect_github_copilot_token (string token) throws GLib.Error {
+        var builder = new Json.Builder ();
+        builder.begin_object ();
+            builder.set_member_name ("github_token");
+            builder.add_string_value (token.strip ());
+        builder.end_object ();
+
+        var generator = new Json.Generator ();
+        generator.set_root (builder.get_root ());
+        string payload = generator.to_data (null);
+
+        var msg = new Soup.Message ("POST", GATEWAY_GITHUB_CONNECT_URL);
+        msg.set_request_body_from_bytes (
+            "application/json",
+            new GLib.Bytes.take (payload.data)
+        );
+
+        GLib.Bytes response_bytes = yield session.send_and_read_async (
+            msg, GLib.Priority.DEFAULT, null
+        );
+
+        string body = (string) response_bytes.get_data ();
+        if (msg.status_code != 200) {
+            throw new GLib.IOError.FAILED (
+                "No pude conectar GitHub Copilot: %s",
+                body.strip ()
+            );
+        }
+
+        yield refresh_runtime_profile ();
+        reset_session ();
+    }
+
+    private async Json.Object post_github_form (string url, string encoded_form) throws GLib.Error {
+        var message = new Soup.Message.from_encoded_form ("POST", url, encoded_form);
+        message.request_headers.append ("Accept", "application/json");
+
+        var response_bytes = yield session.send_and_read_async (message, GLib.Priority.DEFAULT, null);
+        var status_code = (uint) message.status_code;
+        if (status_code < 200 || status_code >= 300) {
+            throw new GLib.IOError.FAILED (
+                "GitHub returned HTTP %u".printf (status_code)
+            );
+        }
+
+        var parser = new Json.Parser ();
+        var data = response_bytes.get_data ();
+        parser.load_from_data ((string) data, (ssize_t) data.length);
+
+        var root = parser.get_root ();
+        if (root == null || root.get_node_type () != Json.NodeType.OBJECT) {
+            throw new GLib.IOError.FAILED ("GitHub returned an invalid JSON response.");
+        }
+
+        return root.get_object ();
+    }
+
+    public async GitHubDeviceCodeResponse request_github_device_code () throws GLib.Error {
+        var response = yield post_github_form (
+            GITHUB_DEVICE_CODE_URL,
+            "client_id=%s&scope=%s".printf (
+                Uri.escape_string (GITHUB_CLIENT_ID, null, false),
+                Uri.escape_string ("read:user", null, false)
+            )
+        );
+
+        return new GitHubDeviceCodeResponse (
+            response.get_string_member ("device_code"),
+            response.get_string_member ("user_code"),
+            response.get_string_member ("verification_uri"),
+            (int) response.get_int_member ("expires_in"),
+            (int) response.get_int_member ("interval")
+        );
+    }
+
+    public async string poll_for_github_access_token (
+        string device_code,
+        int interval_seconds,
+        int expires_in_seconds
+    ) throws GLib.Error {
+        var expires_at = GLib.get_monotonic_time () + ((int64) expires_in_seconds * 1000000);
+        uint interval_msec = (uint) ((interval_seconds > 0 ? interval_seconds : 1) * 1000);
+
+        while (GLib.get_monotonic_time () < expires_at) {
+            var response = yield post_github_form (
+                GITHUB_ACCESS_TOKEN_URL,
+                "client_id=%s&device_code=%s&grant_type=%s".printf (
+                    Uri.escape_string (GITHUB_CLIENT_ID, null, false),
+                    Uri.escape_string (device_code, null, false),
+                    Uri.escape_string (
+                        "urn:ietf:params:oauth:grant-type:device_code",
+                        null,
+                        false
+                    )
+                )
+            );
+
+            if (response.has_member ("access_token")) {
+                return response.get_string_member ("access_token");
+            }
+
+            if (!response.has_member ("error")) {
+                throw new GLib.IOError.FAILED ("GitHub response missing error or access_token");
+            }
+
+            var error_code = response.get_string_member ("error");
+            switch (error_code) {
+                case "authorization_pending":
+                    yield wait_msec (interval_msec);
+                    continue;
+                case "slow_down":
+                    yield wait_msec (interval_msec + 2000);
+                    continue;
+                case "access_denied":
+                    throw new GLib.IOError.CANCELLED ("GitHub login was cancelled.");
+                case "expired_token":
+                    throw new GLib.IOError.TIMED_OUT ("GitHub device code expired.");
+                default:
+                    throw new GLib.IOError.FAILED (
+                        "GitHub device flow failed: %s".printf (error_code)
+                    );
+            }
+        }
+
+        throw new GLib.IOError.TIMED_OUT ("GitHub device code expired.");
+    }
+
+    private async void wait_msec (uint wait_time) {
+        SourceFunc callback = wait_msec.callback;
+
+        Timeout.add (wait_time, () => {
+            callback ();
+            return Source.REMOVE;
+        });
+
+        yield;
     }
 
     public async string begin_openai_codex_subscription () throws GLib.Error {

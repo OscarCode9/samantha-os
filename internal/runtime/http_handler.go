@@ -19,6 +19,7 @@ import (
 	"github.com/oscarcode/elementary-claw/internal/config"
 	"github.com/oscarcode/elementary-claw/internal/memory"
 	"github.com/oscarcode/elementary-claw/internal/prompt"
+	"github.com/oscarcode/elementary-claw/internal/providers/githubcopilot"
 	"github.com/oscarcode/elementary-claw/internal/providers/openai"
 	"github.com/oscarcode/elementary-claw/internal/session"
 	"github.com/oscarcode/elementary-claw/internal/skills"
@@ -187,6 +188,58 @@ func newHandler(paths config.Paths, store *session.Store, registry *tools.Regist
 			"provider": cfg.Agent.Provider,
 			"model":    cfg.Agent.Model,
 			"baseUrl":  cfg.Agent.BaseURL,
+		})
+	})
+
+	mux.HandleFunc("/v1/providers/github-copilot/connect", func(response http.ResponseWriter, request *http.Request) {
+		if request.Method != http.MethodPost {
+			response.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+
+		var payload struct {
+			GitHubToken string `json:"github_token"`
+			Model       string `json:"model"`
+		}
+		if err := json.NewDecoder(request.Body).Decode(&payload); err != nil {
+			http.Error(response, "invalid JSON: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		if err := githubcopilot.SaveGitHubToken(paths, payload.GitHubToken); err != nil {
+			http.Error(response, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		cfg, err := config.LoadFileConfig(paths)
+		if err != nil {
+			http.Error(response, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		model := strings.TrimSpace(payload.Model)
+		if model == "" {
+			model = "github-copilot/gpt-5.4"
+		}
+
+		cfg.Agent.Provider = "github-copilot"
+		cfg.Agent.Model = model
+		cfg.Agent.BaseURL = ""
+		cfg.Setup.ProviderPending = false
+
+		if err := config.SaveFileConfig(paths, cfg); err != nil {
+			http.Error(response, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Clear cache to force token fetch
+		_ = os.Remove(paths.CopilotTokenCachePath)
+
+		response.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(response).Encode(map[string]any{
+			"ok":       true,
+			"provider": cfg.Agent.Provider,
+			"model":    cfg.Agent.Model,
 		})
 	})
 
