@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 /* ------------------------------------------------------------------ */
 /*  Exact port of AIConnectView.vala DNA intro + PRESENTATION step     */
@@ -52,7 +53,8 @@ function drawDNA(
     morph_p = 1.0;
   }
 
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  // Keep the transform set by the caller so high-DPI/mobile canvases
+  // render across the full viewport instead of collapsing into a corner.
   ctx.fillStyle = 'rgb(196, 76, 53)';
   ctx.fillRect(0, 0, W, H);
 
@@ -176,7 +178,12 @@ function drawDNA(
   }
 }
 
-export default function DNAAnimation() {
+interface DNAAnimationProps {
+  onComplete?: () => void;
+}
+
+export default function DNAAnimation({ onComplete }: DNAAnimationProps) {
+  const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameRef = useRef(0);
   const phaseRef = useRef(0);
@@ -234,6 +241,9 @@ export default function DNAAnimation() {
 
       if (frameRef.current >= PRESENTATION_START_FRAME && !showPresentation) {
         setShowPresentation(true);
+        if (onComplete) {
+          onComplete();
+        }
         return;
       }
 
@@ -267,7 +277,8 @@ export default function DNAAnimation() {
     <section
       style={{
         width: '100%',
-        height: '100vh',
+        minHeight: '100vh',
+        height: '100svh',
         background: '#C44C35',
         position: 'relative',
         overflow: 'hidden',
@@ -306,7 +317,7 @@ export default function DNAAnimation() {
               animation: 'slide-up-hero 1000ms cubic-bezier(0.16, 1, 0.3, 1) 0ms both',
             }}
           >
-            Samantha OS.
+            {t('hero.mockupTitle')}
           </h1>
           <h2
             style={{
@@ -319,7 +330,7 @@ export default function DNAAnimation() {
               animation: 'slide-up-hero 1000ms cubic-bezier(0.16, 1, 0.3, 1) 150ms both',
             }}
           >
-            The first AI-native operating system.
+            {t('hero.mockupSubtitle')}
           </h2>
           <a
             href="#hero"
@@ -354,7 +365,7 @@ export default function DNAAnimation() {
               e.currentTarget.style.color = 'rgba(255,255,255,0.70)';
             }}
           >
-            Get Started
+            {t('hero.getStarted')}
           </a>
         </div>
       )}

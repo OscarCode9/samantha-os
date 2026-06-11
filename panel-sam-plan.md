@@ -1,4 +1,4 @@
-# panel-claw — Plan maestro
+# panel-sam — Plan maestro
 
 > Indicator para Wingpanel que permite hacer cualquier pregunta desde el panel de elementary OS.
 > Ejemplo de flujo: el usuario escribe _"encuentra el PDF con nombre contrato.pdf y dame un resumen"_ →
@@ -11,7 +11,7 @@
 
 ```
 ┌─────────────────────────────────────────┐
-│          panel-claw (Vala / GTK4)        │
+│       panel-sam (Vala / GTK3 + GLib)    │
 │                                          │
 │  [Wingpanel] → [ChatPopover]             │
 │      icon          ├─ Gtk.Entry          │
@@ -20,7 +20,7 @@
 │                    │    └─ TextCard      │
 │                    └─ Spinner            │
 └──────────────┬──────────────────────────┘
-               │ HTTP POST (libsoup-3.0)
+               │ HTTP POST (libsoup-3.0, async)
                ▼
 ┌─────────────────────────────────────────┐
 │       claw gateway  :4389  (Go)          │
@@ -36,40 +36,119 @@
 
 ---
 
+## Problemas resueltos el 2026-04-21
+
+### 1. El saludo de setup seguia apareciendo despues del onboarding
+
+**Sintoma observado**
+
+- Samantha respondia con frases como `Hola oscarcode91 — soy Semantha, configurada durante el setup del sistema.` incluso despues de terminar el setup inicial.
+
+**Causa raiz**
+
+- La VM tenia archivos heredados de una version anterior del workspace seed (`IDENTITY.md`, `SOUL.md`, `AGENTS.md`, `USER.md`) que seguian empujando un saludo de onboarding.
+- El runtime todavia podia caer de forma implicita en la sesion `bootstrap` si ese archivo de sesion existia, aunque `BOOTSTRAP.md` ya no estuviera presente.
+- El parser del prompt solo reconocia `Name:` en `IDENTITY.md`, pero el formato canonical actual usa `assistant_name:`.
+
+**Cambios aplicados**
+
+- En [internal/config/setup.go](/Users/oscarcode/elementary-claw/internal/config/setup.go) se agrego `RepairLegacyWorkspaceFiles(paths)` para migrar de forma idempotente los archivos heredados al formato canonical actual.
+- En [internal/runtime/http_handler.go](/Users/oscarcode/elementary-claw/internal/runtime/http_handler.go) y [internal/runtime/streaming.go](/Users/oscarcode/elementary-claw/internal/runtime/streaming.go) el fallback a la sesion `bootstrap` ahora solo ocurre si `BOOTSTRAP.md` sigue existiendo de verdad.
+- En [internal/prompt/prompt.go](/Users/oscarcode/elementary-claw/internal/prompt/prompt.go) `ParseIdentityName` ahora acepta tanto `Name:` como `assistant_name:`.
+- En la VM tambien se elimino `~/.openclaw/workspace/BOOTSTRAP.md` y se dejo `~/.openclaw/workspace/.workspace-state.json` con `bootstrapCompleted=true` para alinear el estado con el runtime actual.
+
+**Validacion**
+
+- Tests locales: `go test ./internal/config ./internal/prompt ./internal/runtime`
+- Verificacion en la VM: `/healthz` y `/status` reportaron `bootstrapPresent=false`.
+- Prueba real contra el gateway: la consulta `Que archivos PDF tengo en mi carpeta personal?` ya no devolvio el saludo de setup.
+
+### 2. El click en un PDF no abria el visor
+
+**Sintoma observado**
+
+- Samantha listaba PDFs, pero al hacer click en el resultado no se abria ninguna aplicacion.
+
+**Causa raiz**
+
+- El indicador estaba usando `GLib.AppInfo.launch_default_for_uri`, que en este contexto de Wingpanel no estaba abriendo el archivo de forma confiable.
+- El parser de resultados solo convertia en botones paths absolutos o con `~`; cuando el modelo devolvia rutas como `Documentos/PDFs/archivo.pdf`, se mostraban como texto normal o se resolvian de forma incompleta.
+- Algunos paths llegaban con puntuacion o backticks de Markdown y habia que limpiarlos antes de resolver el `file://`.
+- La VM necesitaba una asociacion MIME valida para `application/pdf`.
+
+**Cambios aplicados**
+
+- En [panel-sam/src/Indicator.vala](/Users/oscarcode/elementary-claw/panel-sam/src/Indicator.vala) el indicador ahora usa `Gtk.show_uri_on_window(null, uri, Gdk.CURRENT_TIME)` y difiere el lanzamiento con `GLib.Idle.add`.
+- El parser de resultados ahora limpia sufijos como `.`, `:`, y `` ` `` antes de crear el boton clickeable.
+- El regex del indicador ahora reconoce:
+  - paths absolutos (`/home/oscarcode91/...`)
+  - paths con `~`
+  - paths relativos al home como `Documentos/PDFs/archivo.pdf`
+- Si el path es relativo, el indicador lo resuelve contra `GLib.Environment.get_home_dir()` antes de abrirlo.
+- En la VM se verifico y dejo configurado el handler MIME `org.gnome.Evince.desktop` para `application/pdf`.
+
+**Validacion**
+
+- Build local del Vala sin errores reportados por VS Code.
+- Rebuild nativo en la VM de `panel-sam` con `meson` + `ninja` + `sudo ninja -C build install`.
+- Reinicio de Wingpanel en la VM para cargar la nueva `libsam.so`.
+- Prueba real contra el gateway: la respuesta final ya devolvio rutas absolutas a los PDFs del home, listas para convertirse en botones clickeables.
+
+### 3. Comando de verificacion que se uso en la VM
+
+Para comprobar el flujo real contra el gateway activo se uso una sesion nueva y una consulta directa:
+
+```bash
+sshpass -p '12345' ssh -o StrictHostKeyChecking=no oscarcode91@192.168.64.5 \
+  "printf '%s' '{\"model\":\"gpt-5.4\",\"stream\":false,\"max_completion_tokens\":300,\"session_id\":\"panel-sam-pdf-proof-2\",\"messages\":[{\"role\":\"user\",\"content\":\"Que archivos PDF tengo en mi carpeta personal?\"}]}' \
+  | curl -s -X POST http://127.0.0.1:4389/v1/chat/completions \
+    -H 'Content-Type: application/json' -d @-"
+```
+
+Respuesta verificada despues del fix:
+
+```text
+Tienes estos archivos PDF en tu carpeta personal:
+
+- /home/oscarcode91/Documentos/contrato-ejemplo.pdf
+- /home/oscarcode91/Documentos/PDFs/Clase1-IA-NoDevs.pdf
+- /home/oscarcode91/Documentos/PDFs/contrato-servicios-tia-v3.pdf
+- /home/oscarcode91/Documentos/PDFs/propuesta-guillermo-mayo.pdf
+```
+
+---
+
 ## Fases de trabajo
 
 ---
 
-### Fase 0 — Verificación pre-requisitos en VM
-**Objetivo:** confirmar que las dependencias necesarias están disponibles antes de escribir código.
+### Fase 0 — Verificación pre-requisitos en VM ✅ COMPLETADA
+**Resultado verificado el 2026-04-15:**
 
-- [ ] **0.1** — Verificar `wingpanel-9` pkg-config en la VM:
-  ```bash
-  pkg-config --modversion wingpanel-9
-  ```
-- [ ] **0.2** — Verificar `libsoup-3.0` (cliente HTTP async):
-  ```bash
-  pkg-config --modversion libsoup-3.0
-  ```
-- [ ] **0.3** — Verificar `poppler-utils` (`pdftotext` para extraer texto de PDFs):
-  ```bash
-  which pdftotext
-  ```
-  Si no está: `sudo apt install poppler-utils`
-- [ ] **0.4** — Verificar `json-glib-1.0` (parseo JSON en Vala):
-  ```bash
-  pkg-config --modversion json-glib-1.0
-  ```
+| Dependencia | pkg-config name | Versión | Estado |
+|-------------|----------------|---------|--------|
+| Wingpanel | `wingpanel` | 8.0.4 | ✅ (`libwingpanel-dev` instalado) |
+| libsoup | `libsoup-3.0` | 3.4.4 | ✅ |
+| json-glib | `json-glib-1.0` | 1.8.0 | ✅ |
+| granite | `granite-7` | 7.8.1 | ✅ |
+| libadwaita | `libadwaita-1` | 1.5.0 | ✅ |
+| pdftotext | `/usr/bin/pdftotext` | 24.02.0 | ✅ |
+| valac | — | 0.56.17 | ✅ |
+
+> ⚠️ **CRÍTICO:** Wingpanel 8.0.4 usa **GTK3** (no GTK4). Todo el código del indicador
+> debe usar GTK3. La API del indicador está en `/usr/share/vala/vapi/wingpanel.vapi`.
+> El directorio de instalación es `/usr/lib/aarch64-linux-gnu/wingpanel`.
+> El nombre correcto de pkg-config es `wingpanel` (no `wingpanel-9`).
 
 ---
 
-### Fase 1 — Scaffold del proyecto `panel-claw`
+### Fase 1 — Scaffold del proyecto `panel-sam`
 **Objetivo:** crear la estructura mínima del indicador que compile y cargue en Wingpanel (aunque haga nada).
 
 Archivos a crear:
 
 ```
-panel-claw/
+panel-sam/
 ├── meson.build
 ├── data/
 │   └── icons/
@@ -78,19 +157,22 @@ panel-claw/
     └── Indicator.vala
 ```
 
-- [ ] **1.1** — Crear `panel-claw/meson.build` con:
-  - dependencias: `wingpanel-9`, `granite-7 >= 7.7.0`, `gtk4`, `libadwaita-1`, `libsoup-3.0`, `json-glib-1.0`
+- [ ] **1.1** — Crear `panel-sam/meson.build` con:
+  - dependencias: `wingpanel` (GTK3), `libsoup-3.0`, `json-glib-1.0`
+  - **NO** incluir `gtk4` ni `libadwaita-1` — Wingpanel es GTK3
   - `shared_module` instalado en `wingpanel_indicatorsdir`
+  - `wingpanel_dep = dependency('wingpanel')`
   - `install_dir = wingpanel_dep.get_variable('indicatorsdir')`
 
 - [ ] **1.2** — Crear `src/Indicator.vala`:
-  - clase `ClawIndicator : Wingpanel.Indicator`
-  - `code_name = "claw"`
-  - `get_display_widget()` → `Gtk.Image` con ícono del sistema (placeholder)
+  - clase `SamIndicator : Wingpanel.Indicator` (GTK3)
+  - `code_name = "sam"`
+  - `get_display_widget()` → `Gtk.Image` con `icon_name = "system-search-symbolic"` (GTK3)
   - `get_widget()` → `Gtk.Box` vacío (popover placeholder)
-  - función pública `get_indicator()` como entry point
+  - `opened()` / `closed()` vacíos por ahora
+  - Entry point: `public Wingpanel.Indicator? get_indicator (Wingpanel.IndicatorManager.ServerType server_type)`
 
-- [ ] **1.3** — Integrar `panel-claw/` en `vm/package-vm-bundle.sh` para que se empaquete con el resto
+- [ ] **1.3** — Integrar `panel-sam/` en `vm/package-vm-bundle.sh` para que se empaquete con el resto
 
 - [ ] **1.4** — Compilar en la VM y verificar que Wingpanel carga el indicador sin crash
 
@@ -235,7 +317,7 @@ src/Widgets/
   - El resto del texto → crear un `TextCard`
   - Agregar ambos al `ScrolledWindow` resultado
 
-- [ ] **6.4** — CSS en un archivo `data/styles/panel-claw.css`:
+- [ ] **6.4** — CSS en un archivo `data/styles/panel-sam.css`:
   ```css
   .claw-file-card {
       border-radius: 8px;
@@ -279,10 +361,10 @@ src/Widgets/
 ### Fase 9 — Deploy completo y test end-to-end
 **Objetivo:** flujo completo funcionando en la VM con Wingpanel real.
 
-- [ ] **9.1** — Actualizar `vm/package-vm-bundle.sh` para incluir `panel-claw/`
+- [ ] **9.1** — Actualizar `vm/package-vm-bundle.sh` para incluir `panel-sam/`
 - [ ] **9.2** — En la VM:
   ```bash
-  cd panel-claw && meson build && sudo ninja -C build install
+  cd panel-sam && meson build && sudo ninja -C build install
   wingpanel &  # o reiniciar la sesión
   ```
 - [ ] **9.3** — Test del flujo completo:
@@ -298,8 +380,9 @@ src/Widgets/
 
 ## Convenciones de código Vala
 
-Todo el código Vala de `panel-claw` debe seguir el estilo y los patrones de
-`references/initial-setup/src/Views/AIConnectView.vala` como referencia canónica:
+Todo el código Vala de `panel-sam` debe seguir el estilo y los patrones de
+`references/initial-setup/src/Views/AIConnectView.vala` como referencia canónica
+**para la estructura y naming, pero usando GTK3** (no GTK4) ya que Wingpanel 8.0.4 es GTK3:
 
 - Estructura de clase: campos privados declarados al inicio, luego `construct {}` + `build_ui()` separados
 - Widgets como campos privados de la clase (nunca `var` locales si se referencian después)
@@ -316,14 +399,14 @@ Todo el código Vala de `panel-claw` debe seguir el estilo y los patrones de
 
 | Archivo | Descripción |
 |---------|-------------|
-| `panel-claw/meson.build` | Build system del indicador |
-| `panel-claw/src/Indicator.vala` | Entry point, display widget + popover |
-| `panel-claw/src/Widgets/ChatPopover.vala` | UI del popover completo |
-| `panel-claw/src/Widgets/TextCard.vala` | Widget para respuestas de texto |
-| `panel-claw/src/Widgets/FileCard.vala` | Widget para archivos encontrados |
-| `panel-claw/src/Services/GatewayClient.vala` | Cliente HTTP async al gateway |
-| `panel-claw/data/styles/panel-claw.css` | CSS del indicador |
-| `panel-claw/data/icons/io.elementary.panel.claw.svg` | Ícono del panel |
+| `panel-sam/meson.build` | Build system del indicador |
+| `panel-sam/src/Indicator.vala` | Entry point, display widget + popover |
+| `panel-sam/src/Widgets/ChatPopover.vala` | UI del popover completo |
+| `panel-sam/src/Widgets/TextCard.vala` | Widget para respuestas de texto |
+| `panel-sam/src/Widgets/FileCard.vala` | Widget para archivos encontrados |
+| `panel-sam/src/Services/GatewayClient.vala` | Cliente HTTP async al gateway |
+| `panel-sam/data/styles/panel-sam.css` | CSS del indicador |
+| `panel-sam/data/icons/io.elementary.panel.claw.svg` | Ícono del panel |
 | `internal/tools/pdf_text.go` | Tool para extraer texto de PDFs |
 
 ## Resumen de cambios en archivos existentes
@@ -331,7 +414,7 @@ Todo el código Vala de `panel-claw` debe seguir el estilo y los patrones de
 | Archivo | Cambio |
 |---------|--------|
 | `internal/app/app.go` | `workspaceRoot = os.Getenv("HOME")` como default |
-| `vm/package-vm-bundle.sh` | Incluir `panel-claw/` en el bundle |
+| `vm/package-vm-bundle.sh` | Incluir `panel-sam/` en el bundle |
 
 ---
 

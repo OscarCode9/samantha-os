@@ -15,7 +15,6 @@ sudo apt-get install -y \
   build-essential \
   curl \
   desktop-file-utils \
-  epiphany-browser \
   gettext \
   golang-go \
   jq \

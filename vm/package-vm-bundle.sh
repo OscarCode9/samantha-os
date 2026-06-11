@@ -19,16 +19,21 @@ tar -czf "$ARCHIVE_PATH" \
   --exclude='references/initial-setup/.git' \
   --exclude='references/initial-setup/.github' \
   --exclude='references/initial-setup/build' \
+  --exclude='panel-sam/build' \
+  --exclude='panel-sam/voice-bridge/venv' \
+  --exclude='panel-sam/voice-bridge/.venv' \
   --exclude='._*' \
   --exclude='vm/dist' \
   -s ',^,elementary-claw-vm/,' \
   -C "$ROOT_DIR" \
   go.mod \
+  go.sum \
   initial-setup-vm-runbook.md \
   cmd \
   deployments \
   internal \
   vm \
+  panel-sam \
   references/initial-setup
 
 cp "$ARCHIVE_PATH" "$BUILD_ARCHIVE_PATH"

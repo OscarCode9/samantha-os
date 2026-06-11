@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -13,6 +14,54 @@ import (
 
 type Result struct {
 	Path string
+}
+
+// DetectBootstrapMode returns true if BOOTSTRAP.md exists and is not empty,
+// meaning the workspace still needs first-run onboarding.
+func DetectBootstrapMode(paths config.Paths) bool {
+	data, err := os.ReadFile(paths.BootstrapPath)
+	if err != nil {
+		return false
+	}
+	return strings.TrimSpace(string(data)) != ""
+}
+
+// ReadBootstrapInstructions returns the content of BOOTSTRAP.md, or empty
+// string if the file does not exist.
+func ReadBootstrapInstructions(paths config.Paths) string {
+	data, err := os.ReadFile(paths.BootstrapPath)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(data))
+}
+
+// CompleteBootstrap removes BOOTSTRAP.md and writes the completion state
+// to .workspace-state.json. Call this when the LLM signals bootstrap is done.
+func CompleteBootstrap(paths config.Paths) error {
+	// Remove BOOTSTRAP.md.
+	if err := os.Remove(paths.BootstrapPath); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("remove bootstrap file: %w", err)
+	}
+
+	// Write completion state.
+	statePath := workspaceStatePath(paths)
+	state := map[string]any{
+		"bootstrapCompleted": true,
+		"completedAt":        time.Now().UTC().Format(time.RFC3339),
+	}
+	data, err := json.MarshalIndent(state, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshal workspace state: %w", err)
+	}
+	if err := os.WriteFile(statePath, append(data, '\n'), 0o600); err != nil {
+		return fmt.Errorf("write workspace state: %w", err)
+	}
+	return nil
+}
+
+func workspaceStatePath(paths config.Paths) string {
+	return paths.WorkspaceDir + "/.workspace-state.json"
 }
 
 func GenerateFirstMessage(paths config.Paths, store *session.Store, explicitMessage string) (Result, error) {

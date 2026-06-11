@@ -10,8 +10,8 @@ import (
 
 // mcpTool implements tools.Tool by proxying calls to a remote MCP tool.
 type mcpTool struct {
-	client      *Client
-	info        ToolInfo
+	client       *Client
+	info         ToolInfo
 	parsedSchema tools.Schema
 }
 
@@ -21,14 +21,14 @@ type mcpTool struct {
 func NewTool(client *Client, info ToolInfo) tools.Tool {
 	schema := parseInputSchema(info.InputSchema)
 	return &mcpTool{
-		client:      client,
-		info:        info,
+		client:       client,
+		info:         info,
 		parsedSchema: schema,
 	}
 }
 
-func (t *mcpTool) Name() string        { return t.info.Name }
-func (t *mcpTool) Description() string { return t.info.Description }
+func (t *mcpTool) Name() string             { return t.info.Name }
+func (t *mcpTool) Description() string      { return t.info.Description }
 func (t *mcpTool) Parameters() tools.Schema { return t.parsedSchema }
 
 func (t *mcpTool) Execute(ctx context.Context, arguments string) tools.Result {
@@ -46,16 +46,22 @@ func (t *mcpTool) Execute(ctx context.Context, arguments string) tools.Result {
 // the tools.Schema used by the registry.  Returns a minimal schema on error.
 func parseInputSchema(raw json.RawMessage) tools.Schema {
 	if len(raw) == 0 {
-		return tools.Schema{Type: "object"}
+		return tools.Schema{
+			Type:       "object",
+			Properties: map[string]tools.SchemaProperty{},
+		}
 	}
 
 	var s struct {
-		Type       string                      `json:"type"`
-		Properties map[string]json.RawMessage  `json:"properties"`
-		Required   []string                    `json:"required"`
+		Type       string                     `json:"type"`
+		Properties map[string]json.RawMessage `json:"properties"`
+		Required   []string                   `json:"required"`
 	}
 	if err := json.Unmarshal(raw, &s); err != nil {
-		return tools.Schema{Type: "object"}
+		return tools.Schema{
+			Type:       "object",
+			Properties: map[string]tools.SchemaProperty{},
+		}
 	}
 
 	schema := tools.Schema{

@@ -22,3 +22,16 @@ go.work.sum
 
 # OS files
 .DS_Store
+
+# Python virtual environments and cache
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# Meson build directories
+build/
+_build/
+
+# Scratch directory
+scratch/

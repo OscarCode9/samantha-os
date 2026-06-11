@@ -1,6 +1,9 @@
 package skills
 
 import (
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
@@ -438,6 +441,132 @@ func TestRegistryReload(t *testing.T) {
 	}
 }
 
+func TestParseGitHubSource(t *testing.T) {
+	tests := []struct {
+		input string
+		want  gitHubSource
+		ok    bool
+	}{
+		{
+			input: "https://github.com/anthropics/skills",
+			want:  gitHubSource{Owner: "anthropics", Repo: "skills", Ref: "main", Path: "skills"},
+			ok:    true,
+		},
+		{
+			input: "https://github.com/anthropics/skills/tree/main/skills/skill-creator",
+			want:  gitHubSource{Owner: "anthropics", Repo: "skills", Ref: "main", Path: "skills/skill-creator"},
+			ok:    true,
+		},
+		{
+			input: "https://example.com/not-github",
+			ok:    false,
+		},
+	}
+
+	for _, tc := range tests {
+		got, ok := parseGitHubSource(tc.input)
+		if ok != tc.ok {
+			t.Fatalf("parseGitHubSource(%q) ok=%t, want %t", tc.input, ok, tc.ok)
+		}
+		if !tc.ok {
+			continue
+		}
+		if got != tc.want {
+			t.Fatalf("parseGitHubSource(%q) = %+v, want %+v", tc.input, got, tc.want)
+		}
+	}
+}
+
+func TestRegistryInstallSourceFromGitHubCollectionSkipsRestricted(t *testing.T) {
+	server := newFakeAnthropicSkillsServer(t)
+	defer server.Close()
+
+	oldBaseURL := githubAPIBaseURL
+	oldClient := githubHTTPClient
+	oldUseGit := useGitForGitHubInstall
+	oldUseArchive := useArchiveForGitHubInstall
+	githubAPIBaseURL = server.URL
+	githubHTTPClient = server.Client()
+	useGitForGitHubInstall = false
+	useArchiveForGitHubInstall = false
+	t.Cleanup(func() {
+		githubAPIBaseURL = oldBaseURL
+		githubHTTPClient = oldClient
+		useGitForGitHubInstall = oldUseGit
+		useArchiveForGitHubInstall = oldUseArchive
+	})
+
+	registry := NewRegistry()
+	managed := t.TempDir()
+	summary, err := registry.InstallSource("https://github.com/anthropics/skills/tree/main/skills", managed, InstallSourceOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(summary.Installed) != 1 {
+		t.Fatalf("expected 1 installed skill, got %d", len(summary.Installed))
+	}
+	if summary.Installed[0].Name != "alpha" {
+		t.Fatalf("expected alpha installed, got %q", summary.Installed[0].Name)
+	}
+	if len(summary.Skipped) != 1 {
+		t.Fatalf("expected 1 skipped skill, got %d", len(summary.Skipped))
+	}
+	if summary.Skipped[0].Name != "pdf" {
+		t.Fatalf("expected pdf to be skipped, got %q", summary.Skipped[0].Name)
+	}
+
+	if _, err := os.Stat(filepath.Join(managed, "alpha", "SKILL.md")); err != nil {
+		t.Fatalf("expected alpha SKILL.md to be installed: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(managed, "alpha", "references", "guide.md")); err != nil {
+		t.Fatalf("expected alpha references to be installed: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(managed, "pdf")); !os.IsNotExist(err) {
+		t.Fatalf("expected restricted pdf skill to be skipped entirely")
+	}
+}
+
+func TestEnsureDefaultSkillsWritesMarker(t *testing.T) {
+	server := newFakeAnthropicSkillsServer(t)
+	defer server.Close()
+
+	oldBaseURL := githubAPIBaseURL
+	oldClient := githubHTTPClient
+	oldUseGit := useGitForGitHubInstall
+	oldUseArchive := useArchiveForGitHubInstall
+	githubAPIBaseURL = server.URL
+	githubHTTPClient = server.Client()
+	useGitForGitHubInstall = false
+	useArchiveForGitHubInstall = false
+	t.Cleanup(func() {
+		githubAPIBaseURL = oldBaseURL
+		githubHTTPClient = oldClient
+		useGitForGitHubInstall = oldUseGit
+		useArchiveForGitHubInstall = oldUseArchive
+	})
+
+	managed := t.TempDir()
+	summary, err := EnsureDefaultSkills(managed, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(summary.Installed) != 1 {
+		t.Fatalf("expected 1 installed default skill, got %d", len(summary.Installed))
+	}
+	if _, err := os.Stat(filepath.Join(managed, defaultSkillMarkerName)); err != nil {
+		t.Fatalf("expected default skill marker: %v", err)
+	}
+
+	second, err := EnsureDefaultSkills(managed, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(second.Installed) != 0 || len(second.Skipped) != 0 {
+		t.Fatalf("expected second ensure to short-circuit via marker, got %+v", second)
+	}
+}
+
 // ---- CombinedInstructions ----
 
 func TestCombinedInstructions(t *testing.T) {
@@ -455,6 +584,53 @@ func TestCombinedInstructions(t *testing.T) {
 	if !containsSubstring(combined, "Instructions A") || !containsSubstring(combined, "Instructions B") {
 		t.Error("expected both skill instructions in combined output")
 	}
+}
+
+func newFakeAnthropicSkillsServer(t *testing.T) *httptest.Server {
+	t.Helper()
+
+	var server *httptest.Server
+	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		switch r.URL.Path {
+		case "/repos/anthropics/skills/contents/skills":
+			fmt.Fprintf(w, `[
+				{"name":"alpha","path":"skills/alpha","type":"dir"},
+				{"name":"pdf","path":"skills/pdf","type":"dir"}
+			]`)
+		case "/repos/anthropics/skills/contents/skills/alpha":
+			fmt.Fprintf(w, `[
+				{"name":"SKILL.md","path":"skills/alpha/SKILL.md","type":"file","download_url":"%s/download/alpha/SKILL.md"},
+				{"name":"references","path":"skills/alpha/references","type":"dir"}
+			]`, server.URL)
+		case "/repos/anthropics/skills/contents/skills/alpha/references":
+			fmt.Fprintf(w, `[
+				{"name":"guide.md","path":"skills/alpha/references/guide.md","type":"file","download_url":"%s/download/alpha/references/guide.md"}
+			]`, server.URL)
+		case "/repos/anthropics/skills/contents/skills/pdf":
+			fmt.Fprintf(w, `[
+				{"name":"SKILL.md","path":"skills/pdf/SKILL.md","type":"file","download_url":"%s/download/pdf/SKILL.md"},
+				{"name":"LICENSE.txt","path":"skills/pdf/LICENSE.txt","type":"file","download_url":"%s/download/pdf/LICENSE.txt"}
+			]`, server.URL, server.URL)
+		case "/download/alpha/SKILL.md":
+			w.Header().Set("Content-Type", "text/plain")
+			fmt.Fprint(w, "---\nname: alpha\ndescription: Alpha skill\n---\n\n# Alpha\n\nUseful instructions.")
+		case "/download/alpha/references/guide.md":
+			w.Header().Set("Content-Type", "text/plain")
+			fmt.Fprint(w, "# Guide\n\nReference material.")
+		case "/download/pdf/SKILL.md":
+			w.Header().Set("Content-Type", "text/plain")
+			fmt.Fprint(w, "---\nname: pdf\ndescription: PDF skill\n---\n\n# PDF\n\nRestricted skill.")
+		case "/download/pdf/LICENSE.txt":
+			w.Header().Set("Content-Type", "text/plain")
+			fmt.Fprint(w, "All rights reserved. ADDITIONAL RESTRICTIONS: users may not retain copies outside the Services.")
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+
+	return server
 }
 
 func TestCombinedInstructionsEmpty(t *testing.T) {
@@ -530,6 +706,30 @@ func TestRegistryToJSON(t *testing.T) {
 	}
 	if result[0]["enabled"] != true {
 		t.Error("expected enabled=true")
+	}
+}
+
+// ---- SkillFilePath ----
+
+func TestSkillFilePath(t *testing.T) {
+	dir := t.TempDir()
+	createTestSkill(t, dir, "my-skill", "# My Skill\n\nDoes things.")
+
+	registry := NewRegistry()
+	registry.LoadFromDirectory(dir)
+
+	p := registry.SkillFilePath("my-skill")
+	expected := filepath.Join(dir, "my-skill", "SKILL.md")
+	if p != expected {
+		t.Errorf("expected %q, got %q", expected, p)
+	}
+}
+
+func TestSkillFilePathNotFound(t *testing.T) {
+	registry := NewRegistry()
+	p := registry.SkillFilePath("nonexistent")
+	if p != "" {
+		t.Errorf("expected empty, got %q", p)
 	}
 }
 

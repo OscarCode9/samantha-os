@@ -19,14 +19,14 @@ func TestDefaultPathsStructure(t *testing.T) {
 	if paths.HomeDir == "" {
 		t.Fatal("HomeDir should not be empty")
 	}
-	if !strings.HasSuffix(paths.StateDir, ".openclaw") {
-		t.Fatalf("StateDir should end with .openclaw: %s", paths.StateDir)
+	if !strings.HasSuffix(paths.StateDir, ".samantha") {
+		t.Fatalf("StateDir should end with .samantha: %s", paths.StateDir)
 	}
 	if !strings.Contains(paths.WorkspaceDir, "workspace") {
 		t.Fatalf("WorkspaceDir should contain 'workspace': %s", paths.WorkspaceDir)
 	}
-	if !strings.HasSuffix(paths.ConfigPath, "openclaw.json") {
-		t.Fatalf("ConfigPath should end with openclaw.json: %s", paths.ConfigPath)
+	if !strings.HasSuffix(paths.ConfigPath, "samantha.json") {
+		t.Fatalf("ConfigPath should end with samantha.json: %s", paths.ConfigPath)
 	}
 	if !strings.Contains(paths.WorkspaceSkillsDir, "skills") {
 		t.Fatalf("WorkspaceSkillsDir should contain 'skills': %s", paths.WorkspaceSkillsDir)
@@ -62,7 +62,7 @@ func TestDefaultPathsConsistency(t *testing.T) {
 // --- InitializeWorkspace tests ---
 
 func testPaths(root string) Paths {
-	stateDir := filepath.Join(root, ".openclaw")
+	stateDir := filepath.Join(root, ".samantha")
 	workspaceDir := filepath.Join(stateDir, "workspace")
 	credentialsDir := filepath.Join(stateDir, "state", "credentials")
 
@@ -72,7 +72,7 @@ func testPaths(root string) Paths {
 		WorkspaceDir:          workspaceDir,
 		CredentialsDir:        credentialsDir,
 		SessionsDir:           filepath.Join(stateDir, "state", "sessions"),
-		ConfigPath:            filepath.Join(stateDir, "openclaw.json"),
+		ConfigPath:            filepath.Join(stateDir, "samantha.json"),
 		AuthPath:              filepath.Join(stateDir, "agents", "main", "agent", "auth-profiles.json"),
 		CopilotTokenCachePath: filepath.Join(credentialsDir, "github-copilot.token.json"),
 		AgentPath:             filepath.Join(workspaceDir, "AGENTS.md"),
@@ -210,6 +210,67 @@ func TestInitializeWorkspaceBootstrapContent(t *testing.T) {
 	}
 }
 
+func TestRepairLegacyWorkspaceFilesRewritesLegacyGeneratedFiles(t *testing.T) {
+	paths := testPaths(t.TempDir())
+	if err := os.MkdirAll(paths.WorkspaceDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+
+	legacyFiles := map[string]string{
+		paths.AgentPath: "# AGENTS.md - Initial Setup Workspace\n\nThis workspace was seeded during system setup.\n",
+		paths.IdentityPath: "# IDENTITY.md\n\n- Name: Semantha\n- Nature: A local AI teammate for this computer\n- Vibe: direct, warm, and pragmatic\n- Origin: Configured during elementary OS Initial Setup\n",
+		paths.SoulPath: "# SOUL.md\n\n## Core Identity\n\n- Name: Semantha\n- Nature: A local AI teammate for this computer\n- Vibe: direct, warm, and pragmatic\n\n## How To Behave\n\n- On first real conversation, greet oscarcode91 with a personalized welcome and acknowledge that you were configured during system setup.\n",
+		paths.UserPath: "# USER.md\n\n- Account username: oscarcode91\n- Full name: oscarcode91\n- Preferred name: oscarcode91\n",
+		paths.ToolsPath: "# TOOLS.md\n\n- Local machine notes can be added here later.\n",
+		paths.HeartbeatPath: "# HEARTBEAT.md\n\n- If there is nothing relevant to do, reply `HEARTBEAT_OK`.\n",
+	}
+
+	for path, content := range legacyFiles {
+		if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if err := RepairLegacyWorkspaceFiles(paths); err != nil {
+		t.Fatal(err)
+	}
+
+	identity, err := os.ReadFile(paths.IdentityPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(identity), "assistant_name: Semantha") {
+		t.Fatalf("IDENTITY.md should be rewritten in canonical format: %s", string(identity))
+	}
+	if strings.Contains(string(identity), "Initial Setup") {
+		t.Fatalf("IDENTITY.md should not keep legacy setup text: %s", string(identity))
+	}
+
+	soul, err := os.ReadFile(paths.SoulPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(soul), "On first real conversation") {
+		t.Fatalf("SOUL.md should drop legacy setup greeting: %s", string(soul))
+	}
+
+	user, err := os.ReadFile(paths.UserPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(user), "account_name: oscarcode91") {
+		t.Fatalf("USER.md should be rewritten in canonical format: %s", string(user))
+	}
+
+	agents, err := os.ReadFile(paths.AgentPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(agents), "Initial Setup Workspace") {
+		t.Fatalf("AGENTS.md should drop the legacy initial setup workspace header: %s", string(agents))
+	}
+}
+
 // --- LoadFileConfig tests ---
 
 func TestLoadFileConfig(t *testing.T) {
@@ -338,7 +399,7 @@ func TestFileConfigJSONRoundtrip(t *testing.T) {
 	original := FileConfig{
 		Agent: AgentConfig{
 			Model:     "gpt-4o",
-			Workspace: "/home/user/.openclaw/workspace",
+			Workspace: "/home/user/.samantha/workspace",
 			Provider:  "github-copilot",
 			BaseURL:   "https://api.example.com/v1",
 		},

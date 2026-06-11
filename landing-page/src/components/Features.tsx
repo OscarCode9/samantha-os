@@ -54,50 +54,54 @@ function IconProvider() {
   );
 }
 
+import { useTranslation } from 'react-i18next';
+
 const features = [
   {
     icon: <IconZap />,
-    title: 'Zero setup.',
-    body: 'Detects your GitHub account. Device flow auth in under 60 seconds. No API keys to find. No config files to edit.',
+    titleKey: 'features.zeroSetupTitle',
+    bodyKey: 'features.zeroSetupBody',
   },
   {
     icon: <IconPanel />,
-    title: 'Lives in your panel.',
-    body: 'Always one click away from the Wingpanel. Ask anything without leaving your current app. Like Spotlight, but it talks back.',
+    titleKey: 'features.livesPanelTitle',
+    bodyKey: 'features.livesPanelBody',
   },
   {
     icon: <IconShield />,
-    title: 'Your files, your rules.',
-    body: 'Runs locally on your machine. Your code, your repos, your context. Never leaves your OS unless you say so.',
+    titleKey: 'features.filesRulesTitle',
+    bodyKey: 'features.filesRulesBody',
   },
   {
     icon: <IconTool />,
-    title: 'Talks to your tools.',
-    body: 'Terminal, file manager, code editor, settings. Samantha sees what you see and acts where you act.',
+    titleKey: 'features.talksToolsTitle',
+    bodyKey: 'features.talksToolsBody',
   },
   {
     icon: <IconMemory />,
-    title: 'Remembers across sessions.',
-    body: 'Picks up where you left off. Every conversation, every file, every project — all in one persistent workspace.',
+    titleKey: 'features.remembersTitle',
+    bodyKey: 'features.remembersBody',
   },
   {
     icon: <IconProvider />,
-    title: 'Open provider model.',
-    body: 'Starts with GitHub Copilot. Anthropic, OpenAI, and local models coming. You choose the brain.',
+    titleKey: 'features.openModelTitle',
+    bodyKey: 'features.openModelBody',
   },
 ];
 
 export default function Features() {
+  const { t } = useTranslation();
+
   return (
     <section className="features-section section">
       <div className="features-grid">
-        <h2 className="features-title">Not a web app. A real OS citizen.</h2>
+        <h2 className="features-title">{t('features.sectionTitle')}</h2>
         <div className="features-cards">
           {features.map((f) => (
-            <div className="feature-card" key={f.title}>
+            <div className="feature-card" key={f.titleKey}>
               {f.icon}
-              <h3 className="feature-card-title">{f.title}</h3>
-              <p className="feature-card-body">{f.body}</p>
+              <h3 className="feature-card-title">{t(f.titleKey)}</h3>
+              <p className="feature-card-body">{t(f.bodyKey)}</p>
             </div>
           ))}
         </div>

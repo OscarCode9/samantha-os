@@ -128,7 +128,7 @@ Always pair with numeric readout. Bar = proportion, number = precision.
 
 ## 13. WIDGETS (DASHBOARD CARDS)
 
-- `--surface` bg, 16px radius. Hero metric: large Doto/Space Mono, left-aligned
+- `--surface` bg, 16px radius. Hero metric: large Space Mono, left-aligned
 - Unit: `--label` size, adjacent. Category: ALL CAPS Space Mono top-left
 - Instrument gauges: compass, thermometer, dial motifs
 

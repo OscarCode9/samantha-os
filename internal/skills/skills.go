@@ -445,6 +445,18 @@ func (r *Registry) ToJSON() []map[string]any {
 	return result
 }
 
+// SkillFilePath returns the absolute path to a skill's SKILL.md file, or
+// empty string if the skill is not found.
+func (r *Registry) SkillFilePath(name string) string {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	s, ok := r.skills[name]
+	if !ok {
+		return ""
+	}
+	return filepath.Join(s.Path, "SKILL.md")
+}
+
 // parseSkillMarkdown extracts metadata from a SKILL.md file.
 // It parses YAML frontmatter (between --- delimiters) as JSON-compatible
 // metadata, then extracts the H1 title and first paragraph as description.

@@ -1,27 +1,31 @@
+import { useTranslation } from 'react-i18next';
+
 export default function Hero() {
+  const { t } = useTranslation();
+
   return (
     <section className="hero-section section">
       <div className="hero-content">
         <div>
-          <div className="hero-eyebrow">Samantha OS</div>
+          <div className="hero-eyebrow">{t('hero.eyebrow')}</div>
           <h1 className="hero-title">
-            Your OS finally has a mind.
+            {t('hero.title')}
           </h1>
           <p className="hero-subtitle">
-            An AI assistant that lives in your computer — not in a browser tab.
+            {t('hero.subtitle')}
           </p>
           <div className="hero-ctas">
-            <a href="#preorder" className="btn-primary">Pre-order Samantha OS</a>
-            <a href="#film" className="btn-ghost">Watch the film</a>
+            <a href="#preorder" className="btn-primary">{t('hero.comingSoon')}</a>
+            <a href="#film" className="btn-ghost">{t('hero.watchFilm')}</a>
           </div>
           <div className="hero-trust">
-            Built for Samantha OS. GitHub Copilot powered.
+            {t('hero.trust')}
           </div>
         </div>
 
         <div className="device-mockup">
-          <div className="mockup-title">Samantha OS.</div>
-          <div className="mockup-subtitle">The first AI-native operating system.</div>
+          <div className="mockup-title">{t('hero.mockupTitle')}</div>
+          <div className="mockup-subtitle">{t('hero.mockupSubtitle')}</div>
           <div className="mockup-code">ABCD-EFGH</div>
           <div className="mockup-hint">github.com/login/device</div>
         </div>

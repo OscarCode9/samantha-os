@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -9,6 +10,8 @@ import (
 	"github.com/oscarcode/elementary-claw/internal/config"
 	"github.com/oscarcode/elementary-claw/internal/providers/copilotproxy"
 	"github.com/oscarcode/elementary-claw/internal/providers/githubcopilot"
+	"github.com/oscarcode/elementary-claw/internal/providers/openai"
+	"github.com/oscarcode/elementary-claw/internal/providers/openaicodex"
 )
 
 type upstreamTarget struct {
@@ -48,6 +51,40 @@ func resolveUpstreamTarget(paths config.Paths, cfg config.FileConfig) (upstreamT
 			BaseURL: strings.TrimRight(baseURL, "/"),
 			Headers: make(http.Header),
 			Source:  "config",
+		}, nil
+	case "openai":
+		apiKey, source, err := openai.ResolveAPIKey(paths, "")
+		if err != nil {
+			return upstreamTarget{}, err
+		}
+
+		baseURL := strings.TrimSpace(cfg.Agent.BaseURL)
+		if baseURL == "" {
+			baseURL = openai.DefaultAPIBaseURL
+		}
+
+		headers := make(http.Header)
+		headers.Set("Authorization", "Bearer "+apiKey)
+		return upstreamTarget{
+			BaseURL: strings.TrimRight(baseURL, "/"),
+			Headers: headers,
+			Source:  source,
+		}, nil
+	case "openai-codex":
+		credential, source, err := openaicodex.ResolveCredential(context.Background(), paths)
+		if err != nil {
+			return upstreamTarget{}, err
+		}
+
+		headers := make(http.Header)
+		headers.Set("Authorization", "Bearer "+credential.AccessToken)
+		if accountID := strings.TrimSpace(credential.AccountID); accountID != "" {
+			headers.Set("chatgpt-account-id", accountID)
+		}
+		return upstreamTarget{
+			BaseURL: strings.TrimRight(openaicodex.DefaultBaseURL, "/"),
+			Headers: headers,
+			Source:  source,
 		}, nil
 	default:
 		return upstreamTarget{}, fmt.Errorf("unsupported provider %q", provider)

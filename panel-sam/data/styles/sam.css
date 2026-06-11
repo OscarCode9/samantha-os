@@ -1,0 +1,358 @@
+/* ── panel-sam — Coral theme (GTK3 / Wingpanel) ────────────────
+ * Palette: #C44C35 warm coral · pure white typography
+ *
+ * GTK3 notes:
+ *   - box-shadow IS supported (unlike GTK4)
+ *   - separator color uses `color`, not `background-color`
+ *   - entry border needs has_frame = false in Vala AND CSS nuking
+ * ─────────────────────────────────────────────────────────────── */
+
+/* ── Popover container — coral canvas with elevation shadow ── */
+
+popover.background,
+popover.background > contents {
+    background-color: #C44C35;
+    background-image: none;
+    background-clip: padding-box;
+    border: 1px solid rgba(0, 0, 0, 0.22);
+    border-radius: 6px;
+    box-shadow: 0 3px 4px rgba(0, 0, 0, 0.15),
+                0 3px 3px -3px rgba(0, 0, 0, 0.35);
+    margin: 6px;
+    padding: 0;
+}
+
+.sam-popover {
+    background-color: #C44C35;
+    background-image: none;
+    border-radius: 6px;
+    border: none;
+}
+
+.sam-popover > * {
+    background-color: transparent;
+    background-image: none;
+}
+
+/* ── Entry (query input) ── */
+
+entry.sam-entry,
+entry.sam-entry:focus,
+entry.sam-entry:active,
+entry.sam-entry:hover {
+    background-color: transparent;
+    background-image: none;
+    color: #FFFFFF;
+    caret-color: #FFFFFF;
+    border: none;
+    border-image: none;
+    border-radius: 0;
+    box-shadow: none;
+    outline: none;
+    -gtk-outline-radius: 0;
+}
+
+entry.sam-entry text,
+entry.sam-entry:focus text {
+    background-color: transparent;
+    background-image: none;
+    color: #FFFFFF;
+    box-shadow: none;
+}
+
+entry.sam-entry selection,
+entry.sam-entry > text selection {
+    background-color: rgba(255, 255, 255, 0.30);
+    color: #FFFFFF;
+}
+
+/* ── Send button ── */
+
+button.sam-send {
+    background-color: rgba(255, 255, 255, 0.22);
+    background-image: none;
+    border-color: transparent;
+    border-radius: 8px;
+    color: #FFFFFF;
+    min-width: 32px;
+    min-height: 32px;
+    padding-top: 0;
+    padding-bottom: 0;
+    padding-left: 0;
+    padding-right: 0;
+    box-shadow: none;
+}
+
+button.sam-send:hover {
+    background-color: rgba(255, 255, 255, 0.32);
+    background-image: none;
+}
+
+button.sam-send:active {
+    background-color: rgba(0, 0, 0, 0.15);
+    background-image: none;
+}
+
+button.sam-send label {
+    color: #FFFFFF;
+}
+
+/* ── Session buttons (new / reset) ── */
+
+button.sam-session-btn,
+button.sam-session-btn:hover,
+button.sam-session-btn:active {
+    background-image: none;
+    box-shadow: none;
+    border-image: none;
+    outline: none;
+}
+
+button.sam-session-btn {
+    background-color: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 8px;
+    min-width: 28px;
+    min-height: 28px;
+    padding: 0;
+}
+
+button.sam-session-btn:hover {
+    background-color: rgba(255, 255, 255, 0.20);
+    border-color: rgba(255, 255, 255, 0.28);
+}
+
+button.sam-session-btn:active {
+    background-color: rgba(0, 0, 0, 0.10);
+}
+
+button.sam-session-btn image {
+    color: #FFFFFF;
+}
+
+button.sam-mic-recording,
+button.sam-mic-recording:hover,
+button.sam-mic-recording:active {
+    background-color: #FF6E54;
+    border-color: #FFFFFF;
+    box-shadow: 0 0 4px #FFFFFF;
+}
+
+/* ── Divider ── */
+
+separator.sam-divider {
+    color: rgba(255, 255, 255, 0.18);
+    background-color: rgba(255, 255, 255, 0.18);
+    background-image: none;
+    min-height: 1px;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+/* ── Result label ── */
+
+label.sam-result {
+    color: #FFFFFF;
+}
+
+/* ── Spinner ── */
+
+spinner.sam-spinner {
+    color: #FFFFFF;
+}
+
+/* ── Activity card ── */
+
+.sam-activity-box {
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 10px;
+    margin-top: 12px;
+    margin-bottom: 12px;
+    margin-left: 12px;
+    margin-right: 12px;
+    padding: 12px;
+}
+
+.sam-activity-title {
+    color: #FFFFFF;
+    font-weight: 700;
+}
+
+.sam-activity-status {
+    color: rgba(255, 255, 255, 0.86);
+}
+
+.sam-activity-preview {
+    color: rgba(255, 255, 255, 0.78);
+    font-family: monospace;
+    font-size: 12px;
+}
+
+/* ── Provider card (OpenAI Codex offer) ── */
+
+.sam-provider-card {
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 10px;
+    padding: 12px;
+    margin-top: 8px;
+}
+
+.sam-provider-title {
+    color: #FFFFFF;
+    font-weight: 700;
+}
+
+.sam-provider-copy {
+    color: rgba(255, 255, 255, 0.86);
+}
+
+.sam-provider-status {
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 12px;
+}
+
+entry.sam-provider-entry,
+entry.sam-provider-entry:focus,
+entry.sam-provider-entry:active,
+entry.sam-provider-entry:hover {
+    background-color: rgba(255, 255, 255, 0.10);
+    background-image: none;
+    color: #FFFFFF;
+    caret-color: #FFFFFF;
+    border: none;
+    border-radius: 8px;
+    box-shadow: none;
+    padding: 8px 10px;
+}
+
+entry.sam-provider-entry text,
+entry.sam-provider-entry:focus text {
+    background-color: transparent;
+    color: #FFFFFF;
+    box-shadow: none;
+}
+
+entry.sam-provider-entry selection,
+entry.sam-provider-entry > text selection {
+    background-color: rgba(255, 255, 255, 0.25);
+    color: #FFFFFF;
+}
+
+button.sam-provider-btn,
+button.sam-provider-btn:hover,
+button.sam-provider-btn:active {
+    background-image: none;
+    box-shadow: none;
+    border-image: none;
+    outline: none;
+}
+
+button.sam-provider-btn {
+    background-color: rgba(255, 255, 255, 0.20);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 8px;
+    color: #FFFFFF;
+    padding: 6px 12px;
+}
+
+button.sam-provider-btn:hover {
+    background-color: rgba(255, 255, 255, 0.30);
+}
+
+button.sam-provider-btn:active {
+    background-color: rgba(0, 0, 0, 0.12);
+}
+
+button.sam-provider-btn label {
+    color: #FFFFFF;
+}
+
+/* ── File row — Nothing style ── */
+
+button.sam-file-btn,
+button.sam-file-btn:hover,
+button.sam-file-btn:active {
+    background-image: none;
+    box-shadow: none;
+    border-image: none;
+    outline: none;
+}
+
+button.sam-file-btn {
+    background-color: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin-top: 2px;
+    margin-bottom: 2px;
+}
+
+button.sam-file-btn:hover {
+    background-color: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.30);
+}
+
+button.sam-file-btn:active {
+    background-color: rgba(0, 0, 0, 0.10);
+}
+
+.sam-file-icon {
+    color: rgba(255, 255, 255, 0.70);
+}
+
+.sam-file-name {
+    color: #FFFFFF;
+    font-family: monospace;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.sam-file-arrow {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 14px;
+}
+
+/* ── PDF bubbles — pill buttons that wrap cleanly ── */
+
+.sam-pdf-row {
+    margin-top: 2px;
+    margin-bottom: 2px;
+}
+
+button.sam-pdf-bubble,
+button.sam-pdf-bubble:hover,
+button.sam-pdf-bubble:active {
+    background-image: none;
+    box-shadow: none;
+    border-image: none;
+    outline: none;
+}
+
+button.sam-pdf-bubble {
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.20);
+    border-radius: 16px;
+    padding: 5px 12px;
+    margin: 2px 3px;
+}
+
+button.sam-pdf-bubble:hover {
+    background-color: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.32);
+}
+
+button.sam-pdf-bubble:active {
+    background-color: rgba(0, 0, 0, 0.12);
+}
+
+.sam-pdf-bubble-icon {
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.sam-pdf-bubble-name {
+    color: #FFFFFF;
+    font-weight: 600;
+    font-size: 12px;
+}

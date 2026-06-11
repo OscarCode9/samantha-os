@@ -25,15 +25,29 @@ type FunctionCall struct {
 	Arguments string `json:"arguments"`
 }
 
+// ContentPart represents OpenAI-compatible multimodal message content.
+type ContentPart struct {
+	Type     string    `json:"type"`
+	Text     string    `json:"text,omitempty"`
+	ImageURL *ImageURL `json:"image_url,omitempty"`
+}
+
+// ImageURL holds a data URL or remote URL for an image content part.
+type ImageURL struct {
+	URL    string `json:"url"`
+	Detail string `json:"detail,omitempty"`
+}
+
 // Message represents a chat message with full tool-call support.
 // For assistant messages requesting tools: ToolCalls is populated.
 // For tool result messages: Role is "tool", ToolCallID references the call, and Name identifies the tool.
 type Message struct {
-	Role       string     `json:"role"`
-	Content    string     `json:"content,omitempty"`
-	ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
-	ToolCallID string     `json:"tool_call_id,omitempty"`
-	Name       string     `json:"name,omitempty"`
+	Role         string        `json:"role"`
+	Content      string        `json:"content,omitempty"`
+	ContentParts []ContentPart `json:"content_parts,omitempty"`
+	ToolCalls    []ToolCall    `json:"tool_calls,omitempty"`
+	ToolCallID   string        `json:"tool_call_id,omitempty"`
+	Name         string        `json:"name,omitempty"`
 }
 
 type Record struct {

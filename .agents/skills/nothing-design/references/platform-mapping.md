@@ -55,7 +55,7 @@ extension Color {
 }
 ```
 
-Light mode values in tokens.md Dark/Light table. Derive Font extension from font stack table (trivial: `.custom("Doto"/"SpaceGrotesk-Regular"/"SpaceMono-Regular", size:)`).
+Light mode values in tokens.md Dark/Light table. Derive Font extension from font stack table (trivial: `.custom("SpaceGrotesk-Regular"/"SpaceMono-Regular", size:)`)..
 
 ---
 

@@ -2,6 +2,8 @@ package tools
 
 import (
 	"context"
+	"encoding/json"
+	"strings"
 	"testing"
 )
 
@@ -9,6 +11,11 @@ type stubTool struct {
 	name        string
 	description string
 	result      Result
+}
+
+type noArgStubTool struct {
+	name        string
+	description string
 }
 
 func (s *stubTool) Name() string        { return s.name }
@@ -24,6 +31,13 @@ func (s *stubTool) Parameters() Schema {
 }
 func (s *stubTool) Execute(ctx context.Context, arguments string) Result {
 	return s.result
+}
+
+func (s *noArgStubTool) Name() string        { return s.name }
+func (s *noArgStubTool) Description() string { return s.description }
+func (s *noArgStubTool) Parameters() Schema  { return Schema{Type: "object"} }
+func (s *noArgStubTool) Execute(ctx context.Context, arguments string) Result {
+	return TextResult("ok")
 }
 
 func TestRegistryRegisterAndGet(t *testing.T) {
@@ -103,6 +117,27 @@ func TestRegistryDefinitions(t *testing.T) {
 	}
 	if defs[0].Function.Description != "does stuff" {
 		t.Fatalf("unexpected description: %s", defs[0].Function.Description)
+	}
+}
+
+func TestRegistryDefinitionsNormalizeNoArgSchemas(t *testing.T) {
+	registry := NewRegistry()
+	registry.Register(&noArgStubTool{name: "no_args", description: "does not need input"})
+
+	defs := registry.Definitions()
+	if len(defs) != 1 {
+		t.Fatalf("expected 1 definition, got %d", len(defs))
+	}
+	if defs[0].Function.Parameters.Properties == nil {
+		t.Fatal("expected object schema properties to be normalized to an empty map")
+	}
+
+	body, err := json.Marshal(defs[0])
+	if err != nil {
+		t.Fatalf("marshal definition: %v", err)
+	}
+	if !strings.Contains(string(body), `"properties":{}`) {
+		t.Fatalf("expected serialized definition to include an empty properties object, got %s", string(body))
 	}
 }
 

@@ -31,7 +31,7 @@ func skipIfNoToken(t *testing.T) {
 func makeLivePaths(t *testing.T) config.Paths {
 	t.Helper()
 	root := t.TempDir()
-	stateDir := filepath.Join(root, ".openclaw")
+	stateDir := filepath.Join(root, ".samantha")
 	workspaceDir := filepath.Join(stateDir, "workspace")
 	credentialsDir := filepath.Join(stateDir, "state", "credentials")
 
@@ -41,7 +41,7 @@ func makeLivePaths(t *testing.T) config.Paths {
 		WorkspaceDir:          workspaceDir,
 		CredentialsDir:        credentialsDir,
 		SessionsDir:           filepath.Join(stateDir, "state", "sessions"),
-		ConfigPath:            filepath.Join(stateDir, "openclaw.json"),
+		ConfigPath:            filepath.Join(stateDir, "samantha.json"),
 		AuthPath:              filepath.Join(stateDir, "agents", "main", "agent", "auth-profiles.json"),
 		CopilotTokenCachePath: filepath.Join(credentialsDir, "github-copilot.token.json"),
 		AgentPath:             filepath.Join(workspaceDir, "AGENTS.md"),

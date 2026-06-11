@@ -32,7 +32,7 @@ Every screen has exactly **three layers of importance.** Not two, not five. Thre
 
 | Layer | What | How |
 |-------|------|-----|
-| **Primary** | The ONE thing the user sees first. A number, a headline, a state. | Doto or Space Grotesk at display size. `--text-display`. 48–96px breathing room. |
+| **Primary** | The ONE thing the user sees first. A number, a headline, a state. | Space Grotesk at display size. `--text-display`. 48–96px breathing room. |
 | **Secondary** | Supporting context. Labels, descriptions, related data. | Space Grotesk at body/subheading. `--text-primary`. Grouped tight (8–16px) to the primary. |
 | **Tertiary** | Metadata, navigation, system info. Visible but never competing. | Space Mono at caption/label. `--text-secondary` or `--text-disabled`. ALL CAPS. Pushed to edges or bottom. |
 
@@ -43,7 +43,7 @@ Every screen has exactly **three layers of importance.** Not two, not five. Thre
 ### 2.2 Font Discipline
 
 Per screen, use maximum:
-- **2 font families** (Space Grotesk + Space Mono. Doto only for hero moments.)
+- **2 font families** (Space Grotesk + Space Mono)
 - **3 font sizes** (one large, one medium, one small)
 - **2 font weights** (Regular + one other — usually Light or Medium, rarely Bold)
 
@@ -100,7 +100,7 @@ In a monochrome system, the gray scale IS the hierarchy. Max 4 levels per screen
 
 **Be consistent in:** Font families, label treatment (always Space Mono ALL CAPS), spacing rhythm, color roles, component shapes, alignment.
 
-**Break the pattern in exactly ONE place per screen:** An oversized number, a circular widget among rectangles, a red accent among grays, a Doto headline, a vast gap where everything else is tight.
+**Break the pattern in exactly ONE place per screen:** An oversized number, a circular widget among rectangles, a red accent among grays, a vast gap where everything else is tight.
 
 This single break IS the design. Without it: sterile grid. With more than one: visual chaos.
 
@@ -128,7 +128,7 @@ When 3+ data sections appear on one screen, vary the visual form:
 
 | Form | Best for | Weight |
 |------|----------|--------|
-| Hero number (large Doto/Space Mono) | Single key metric | Heavy — use once |
+| Hero number (large Space Mono) | Single key metric | Heavy — use once |
 | Segmented progress bar | Progress toward goal | Medium |
 | Concentric rings / arcs | Multiple related percentages | Medium |
 | Inline compact bar | Secondary metrics in rows | Light |

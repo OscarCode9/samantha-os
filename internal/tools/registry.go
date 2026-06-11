@@ -18,14 +18,25 @@ type Tool interface {
 // Schema defines a tool's input parameters as JSON Schema.
 type Schema struct {
 	Type       string                    `json:"type"`
-	Properties map[string]SchemaProperty `json:"properties,omitempty"`
+	Properties map[string]SchemaProperty `json:"properties"`
 	Required   []string                  `json:"required,omitempty"`
+}
+
+func normalizeSchema(schema Schema) Schema {
+	if schema.Type == "" {
+		schema.Type = "object"
+	}
+	if schema.Type == "object" && schema.Properties == nil {
+		schema.Properties = map[string]SchemaProperty{}
+	}
+	return schema
 }
 
 // SchemaProperty describes a single parameter in a tool's JSON Schema.
 type SchemaProperty struct {
 	Type        string   `json:"type"`
 	Description string   `json:"description,omitempty"`
+	Items       *SchemaProperty `json:"items,omitempty"`
 	Enum        []string `json:"enum,omitempty"`
 	Minimum     *int     `json:"minimum,omitempty"`
 	Maximum     *int     `json:"maximum,omitempty"`
@@ -47,8 +58,17 @@ type FunctionDef struct {
 
 // Result is what a tool returns after execution.
 type Result struct {
-	Content string `json:"content"`
-	IsError bool   `json:"is_error,omitempty"`
+	Content     string       `json:"content"`
+	IsError     bool         `json:"is_error,omitempty"`
+	Attachments []Attachment `json:"-"`
+}
+
+// Attachment is a local file produced by a tool that the runtime may attach
+// to the next model turn as multimodal context.
+type Attachment struct {
+	Type     string
+	Path     string
+	MimeType string
 }
 
 // TextResult creates a successful result with text content.
@@ -120,7 +140,7 @@ func (r *Registry) Definitions() []Definition {
 			Function: FunctionDef{
 				Name:        t.Name(),
 				Description: t.Description(),
-				Parameters:  t.Parameters(),
+				Parameters:  normalizeSchema(t.Parameters()),
 			},
 		})
 	}

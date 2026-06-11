@@ -1,11 +1,15 @@
+import { useTranslation } from 'react-i18next';
+
 export default function Quote() {
+  const { t } = useTranslation();
+
   return (
     <section className="quote-section section">
       <div className="quote-content">
         <blockquote className="quote-text">
-          This is what an operating system should have always been.
+          {t('quote.text')}
         </blockquote>
-        <cite className="quote-attribution">Samantha OS user, 2026</cite>
+        <cite className="quote-attribution">{t('quote.author')}</cite>
       </div>
     </section>
   );

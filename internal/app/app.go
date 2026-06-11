@@ -7,10 +7,12 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/oscarcode/elementary-claw/internal/bootstrap"
 	"github.com/oscarcode/elementary-claw/internal/config"
+	"github.com/oscarcode/elementary-claw/internal/cron"
 	"github.com/oscarcode/elementary-claw/internal/mcp"
 	"github.com/oscarcode/elementary-claw/internal/providers/copilotproxy"
 	"github.com/oscarcode/elementary-claw/internal/providers/githubcopilot"
@@ -49,6 +51,8 @@ func (app *App) Run(args []string) error {
 		return app.runGateway(args[1:])
 	case "bootstrap":
 		return app.runBootstrap(args[1:])
+	case "login":
+		return app.runLogin(args[1:])
 	case "providers":
 		return app.runProviders(args[1:])
 	case "sessions":
@@ -59,6 +63,8 @@ func (app *App) Run(args []string) error {
 		return app.runSkills(args[1:])
 	case "mcp":
 		return app.runMcp(args[1:])
+	case "cron":
+		return app.runCron(args[1:])
 	case "version", "--version", "-v":
 		fmt.Println("elementary-claw dev")
 		return nil
@@ -106,6 +112,7 @@ func (app *App) runSetup(args []string) error {
 	if err := config.InitializeWorkspace(app.paths, options); err != nil {
 		return err
 	}
+	app.ensureDefaultSkills(false)
 
 	fmt.Printf("initialized workspace at %s\n", *workspace)
 	return nil
@@ -126,6 +133,7 @@ func (app *App) runGateway(args []string) error {
 			return err
 		}
 
+		app.ensureDefaultSkills(false)
 		registry := app.buildToolRegistry(*workdir)
 		skillsRegistry := app.buildSkillsRegistry()
 		return runtime.Serve(*listen, app.paths, app.store, registry, skillsRegistry)
@@ -209,6 +217,67 @@ func (app *App) runSessions(args []string) error {
 	default:
 		return fmt.Errorf("unknown sessions subcommand %q", args[0])
 	}
+}
+
+func (app *App) runLogin(args []string) error {
+	fmt.Println("Starting GitHub Copilot device flow...")
+	fmt.Println()
+
+	dcr, err := githubcopilot.RequestDeviceCode()
+	if err != nil {
+		return fmt.Errorf("request device code: %w", err)
+	}
+
+	fmt.Printf("Open this URL in your browser:\n\n  %s\n\n", dcr.VerificationURI)
+	fmt.Printf("Enter this code: %s\n\n", dcr.UserCode)
+	fmt.Println("Waiting for authorization...")
+
+	token, err := githubcopilot.PollForAccessToken(dcr.DeviceCode, dcr.Interval, dcr.ExpiresIn)
+	if err != nil {
+		return fmt.Errorf("device flow: %w", err)
+	}
+
+	// Save the token to the auth store.
+	if err := saveGitHubToken(app.paths, token); err != nil {
+		return fmt.Errorf("save token: %w", err)
+	}
+
+	fmt.Println("Login successful! Token saved.")
+	return nil
+}
+
+func saveGitHubToken(paths config.Paths, token string) error {
+	// Read existing auth store or create new one.
+	data, err := os.ReadFile(paths.AuthPath)
+	var store map[string]any
+	if err == nil {
+		json.Unmarshal(data, &store)
+	}
+	if store == nil {
+		store = map[string]any{"version": 1, "profiles": map[string]any{}}
+	}
+
+	profiles, _ := store["profiles"].(map[string]any)
+	if profiles == nil {
+		profiles = map[string]any{}
+	}
+
+	profiles["github-copilot:default"] = map[string]any{
+		"provider": "github-copilot",
+		"mode":     "active",
+		"token":    token,
+	}
+	store["profiles"] = profiles
+
+	if err := os.MkdirAll(filepath.Dir(paths.AuthPath), 0o700); err != nil {
+		return err
+	}
+
+	jsonBytes, err := json.MarshalIndent(store, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(paths.AuthPath, append(jsonBytes, '\n'), 0o600)
 }
 
 func (app *App) runProviders(args []string) error {
@@ -301,11 +370,12 @@ func (app *App) runCopilotProxyProvider(args []string) error {
 // declared in the config file.
 func (app *App) buildToolRegistry(workdir string) *tools.Registry {
 	if workdir == "" {
-		workdir = app.paths.HomeDir
+		workdir = firstNonEmpty(app.paths.WorkspaceDir, app.paths.HomeDir)
 	}
 
 	registry := tools.NewRegistry()
 	registry.Register(tools.NewExecTool(tools.ExecToolOptions{DefaultWorkdir: workdir}))
+	registry.Register(tools.NewSaveMemoryTool(workdir))
 	registry.Register(tools.NewReadFileTool(workdir))
 	registry.Register(tools.NewWriteFileTool(workdir))
 	registry.Register(tools.NewListDirTool(workdir))
@@ -314,6 +384,48 @@ func (app *App) buildToolRegistry(workdir string) *tools.Registry {
 	registry.Register(tools.NewEditFileTool(workdir))
 	registry.Register(tools.NewWebFetchTool())
 	registry.Register(tools.NewNotifyTool())
+	registry.Register(tools.NewCreateDailyNotificationJobTool(""))
+	registry.Register(tools.NewCreateDailyNotificationJobWithCalendarTool(""))
+	registry.Register(tools.NewCreateCalendarEventTool())
+	registry.Register(tools.NewModifyCalendarEventTool())
+	registry.Register(tools.NewListCalendarEventsTool())
+	registry.Register(tools.NewListContactsTool())
+	registry.Register(tools.NewSearchContactsTool())
+	registry.Register(tools.NewCreateContactTool())
+	registry.Register(tools.NewModifyContactTool())
+	registry.Register(tools.NewDeleteContactTool())
+	registry.Register(tools.NewCreateTaskTool())
+	registry.Register(tools.NewListTasksTool())
+	registry.Register(tools.NewCompleteTaskTool())
+	registry.Register(tools.NewDeleteTaskTool())
+	registry.Register(tools.NewGetActiveWindowTool())
+	registry.Register(tools.NewGetBatteryStatusTool())
+	registry.Register(tools.NewAudioVolumeTool())
+	registry.Register(tools.NewMediaControlTool())
+	registry.Register(tools.NewInhibitSleepTool())
+	registry.Register(tools.NewConcentrationModeTool())
+	registry.Register(tools.NewSendNotificationTool())
+	registry.Register(tools.NewGetNetworkStatusTool())
+	registry.Register(tools.NewListWiFiNetworksTool())
+	registry.Register(tools.NewConnectWiFiTool())
+	registry.Register(tools.NewBluetoothDeviceTool())
+	registry.Register(tools.NewOpenFolderTool())
+	registry.Register(tools.NewDeveloperModeTool(workdir))
+	registry.Register(tools.NewTrashFileTool())
+	registry.Register(tools.NewCleanCacheTool())
+	registry.Register(tools.NewGetCurrentUserTool())
+	registry.Register(tools.NewTakeScreenshotTool())
+	registry.Register(tools.NewInspectImageTool(workdir))
+	registry.Register(tools.NewConnectGmailTool())
+	registry.Register(tools.NewListEmailsTool())
+	registry.Register(tools.NewReadEmailTool())
+	registry.Register(tools.NewSendEmailTool())
+	registry.Register(tools.NewSearchEmailsTool())
+	registry.Register(tools.NewListCronJobsTool(""))
+	registry.Register(tools.NewUpdateCronJobTool(""))
+	registry.Register(tools.NewDeleteCronJobTool(""))
+	registry.Register(tools.NewDeleteAllJobsAndEventsTool(""))
+	registry.Register(tools.NewPdfTextTool(workdir))
 
 	// Load remote MCP tools from config (best-effort: log on error, don't abort).
 	cfg, err := config.LoadFileConfig(app.paths)
@@ -469,11 +581,19 @@ func (app *App) runSkills(args []string) error {
 			return errors.New("skills install requires a source (path or URL)")
 		}
 		registry := app.buildSkillsRegistry()
-		installed, err := registry.Install(args[1], app.paths.ManagedSkillsDir)
+		summary, err := registry.InstallSource(args[1], app.paths.ManagedSkillsDir, skills.InstallSourceOptions{})
 		if err != nil {
 			return err
 		}
-		fmt.Printf("installed skill %q at %s\n", installed.Name, installed.Path)
+		app.printSkillInstallSummary(summary)
+		return nil
+
+	case "install-defaults", "ensure-defaults":
+		summary, err := skills.EnsureDefaultSkills(app.paths.ManagedSkillsDir, false)
+		if err != nil {
+			return err
+		}
+		app.printSkillInstallSummary(summary)
 		return nil
 
 	case "remove":
@@ -566,7 +686,7 @@ func (app *App) runMcpAuth(serverName string) error {
 
 	srv, ok := cfg.Mcp.Servers[serverName]
 	if !ok {
-		return fmt.Errorf("MCP server %q not found in config — add it to ~/.openclaw/openclaw.json first", serverName)
+		return fmt.Errorf("MCP server %q not found in config — add it to ~/.samantha/samantha.json first", serverName)
 	}
 	if srv.OAuthClientID == "" {
 		return fmt.Errorf("MCP server %q has no oauthClientId configured", serverName)
@@ -642,6 +762,216 @@ func (app *App) runMcpListTools(serverName string) error {
 	return nil
 }
 
+func (app *App) runCron(args []string) error {
+	if len(args) == 0 || args[0] == "help" || args[0] == "--help" || args[0] == "-h" {
+		return app.printCronHelp()
+	}
+
+	// Inicializar servicio de cron
+	cronStorePath := filepath.Join(app.paths.WorkspaceDir, "cron.db")
+	store, err := cron.NewSQLiteStorage(cronStorePath)
+	if err != nil {
+		return fmt.Errorf("initialize cron storage: %w", err)
+	}
+	defer store.Close()
+
+	service, err := cron.NewService(context.Background(), store)
+	if err != nil {
+		return fmt.Errorf("initialize cron service: %w", err)
+	}
+
+	switch args[0] {
+	case "list":
+		opts := cron.ListJobsOptions{Limit: 50}
+		jobs, err := service.ListJobs(context.Background(), opts)
+		if err != nil {
+			return err
+		}
+
+		if len(jobs) == 0 {
+			fmt.Println("no cron jobs found")
+			return nil
+		}
+
+		fmt.Printf("Cron Jobs (%d):\n", len(jobs))
+		fmt.Printf("%-40s %-30s %-10s %-20s\n", "ID", "NAME", "ENABLED", "LAST RUN")
+		fmt.Printf("%s %s %s %s\n", strings.Repeat("-", 40), strings.Repeat("-", 30), strings.Repeat("-", 10), strings.Repeat("-", 20))
+
+		for _, job := range jobs {
+			enabled := "no"
+			if job.Enabled {
+				enabled = "yes"
+			}
+			lastRun := "never"
+			if job.LastRunAt != nil {
+				lastRun = job.LastRunAt.Format("2006-01-02 15:04:05")
+			}
+			fmt.Printf("%-40s %-30s %-10s %-20s\n", job.ID, job.Name, enabled, lastRun)
+		}
+		return nil
+
+	case "status":
+		status := service.Status(context.Background())
+		fmt.Printf("Cron Status:\n")
+		fmt.Printf("  Enabled:        %v\n", status.Enabled)
+		fmt.Printf("  Total Jobs:     %d\n", status.TotalJobs)
+		fmt.Printf("  Active Jobs:    %d\n", status.ActiveJobs)
+		fmt.Printf("  Failed Jobs:    %d\n", status.FailedJobs)
+		fmt.Printf("  Last Sync:      %s\n", status.LastSyncAt.Format("2006-01-02 15:04:05"))
+		if status.NextScheduledAt != nil {
+			fmt.Printf("  Next Scheduled: %s\n", status.NextScheduledAt.Format("2006-01-02 15:04:05"))
+		}
+		return nil
+
+	case "get":
+		if len(args) < 2 {
+			return fmt.Errorf("get requires a job ID\n%s", cronHelp)
+		}
+		jobID := args[1]
+		job, err := service.GetJob(context.Background(), jobID)
+		if err != nil {
+			return err
+		}
+
+		jobJSON, err := json.MarshalIndent(job, "", "  ")
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(jobJSON))
+		return nil
+
+	case "create":
+		fs := flag.NewFlagSet("cron create", flag.ContinueOnError)
+		fs.SetOutput(discardWriter{})
+		name := fs.String("name", "", "job name")
+		schedule := fs.String("schedule", "", "schedule JSON (kind, expr, intervalMs, at)")
+		payload := fs.String("payload", "", "payload JSON")
+		delivery := fs.String("delivery", "announce", "delivery mode: none, announce, webhook")
+		webhookURL := fs.String("webhook-url", "", "webhook URL (if delivery=webhook)")
+
+		if err := fs.Parse(args[1:]); err != nil {
+			return err
+		}
+
+		if *name == "" || *schedule == "" || *payload == "" {
+			return fmt.Errorf("create requires --name, --schedule, and --payload\n%s", cronHelp)
+		}
+
+		var sch cron.Schedule
+		if err := json.Unmarshal([]byte(*schedule), &sch); err != nil {
+			return fmt.Errorf("invalid schedule JSON: %w", err)
+		}
+
+		var pl cron.Payload
+		if err := json.Unmarshal([]byte(*payload), &pl); err != nil {
+			return fmt.Errorf("invalid payload JSON: %w", err)
+		}
+
+		input := cron.CreateJobInput{
+			Name:         *name,
+			Schedule:     sch,
+			Payload:      pl,
+			DeliveryMode: cron.DeliveryMode(*delivery),
+			WebhookURL:   *webhookURL,
+		}
+
+		job, err := service.CreateJob(context.Background(), input)
+		if err != nil {
+			return err
+		}
+
+		jobJSON, err := json.MarshalIndent(job, "", "  ")
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(jobJSON))
+		return nil
+
+	case "run":
+		if len(args) < 2 {
+			return fmt.Errorf("run requires a job ID\n%s", cronHelp)
+		}
+		jobID := args[1]
+
+		runLog, err := service.RunJobNow(context.Background(), jobID)
+		if err != nil {
+			return err
+		}
+
+		logJSON, err := json.MarshalIndent(runLog, "", "  ")
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(logJSON))
+		return nil
+
+	case "update":
+		if len(args) < 2 {
+			return fmt.Errorf("update requires a job ID\n%s", cronHelp)
+		}
+		jobID := args[1]
+
+		fs := flag.NewFlagSet("cron update", flag.ContinueOnError)
+		fs.SetOutput(discardWriter{})
+		name := fs.String("name", "", "job name")
+		enabled := fs.Bool("enabled", false, "enable job")
+		patch := fs.String("patch", "", "JSON patch {enabled, name, ...}")
+
+		if err := fs.Parse(args[2:]); err != nil {
+			return err
+		}
+
+		var input cron.UpdateJobInput
+		if *patch != "" {
+			if err := json.Unmarshal([]byte(*patch), &input); err != nil {
+				return fmt.Errorf("invalid patch JSON: %w", err)
+			}
+		} else {
+			if *name != "" {
+				input.Name = name
+			}
+			if *enabled {
+				t := true
+				input.Enabled = &t
+			}
+		}
+
+		job, err := service.UpdateJob(context.Background(), jobID, input)
+		if err != nil {
+			return err
+		}
+
+		jobJSON, err := json.MarshalIndent(job, "", "  ")
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(jobJSON))
+		return nil
+
+	case "delete":
+		if len(args) < 2 {
+			return fmt.Errorf("delete requires a job ID\n%s", cronHelp)
+		}
+		jobID := args[1]
+
+		err := service.DeleteJob(context.Background(), jobID)
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("job deleted: %s\n", jobID)
+		return nil
+
+	default:
+		return fmt.Errorf("unknown cron subcommand %q\n%s", args[0], cronHelp)
+	}
+}
+
+func (app *App) printCronHelp() error {
+	fmt.Print(cronHelp)
+	return nil
+}
+
 func (app *App) printRootHelp() error {
 	fmt.Print(rootHelp)
 	return nil
@@ -675,6 +1005,44 @@ func (app *App) printToolsHelp() error {
 func (app *App) printSkillsHelp() error {
 	fmt.Print(skillsHelp)
 	return nil
+}
+
+func (app *App) ensureDefaultSkills(force bool) {
+	summary, err := skills.EnsureDefaultSkills(app.paths.ManagedSkillsDir, force)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "warning: ensuring default skills: %v\n", err)
+		return
+	}
+	if len(summary.Installed) > 0 {
+		fmt.Fprintf(os.Stderr, "installed %d default skill(s)\n", len(summary.Installed))
+	}
+
+	restrictedSkips := 0
+	for _, skip := range summary.Skipped {
+		if strings.Contains(skip.Reason, "restrictive upstream license") {
+			restrictedSkips++
+		}
+	}
+	if restrictedSkips > 0 {
+		fmt.Fprintf(os.Stderr, "skipped %d restricted upstream skill(s)\n", restrictedSkips)
+	}
+}
+
+func (app *App) printSkillInstallSummary(summary *skills.InstallSummary) {
+	if summary == nil || (len(summary.Installed) == 0 && len(summary.Skipped) == 0) {
+		fmt.Println("no skills changed")
+		return
+	}
+
+	for _, installed := range summary.Installed {
+		fmt.Printf("installed skill %q at %s\n", installed.Name, installed.Path)
+	}
+	for _, skip := range summary.Skipped {
+		fmt.Printf("skipped skill %q: %s\n", skip.Name, skip.Reason)
+	}
+	if len(summary.Installed) > 1 || len(summary.Skipped) > 0 {
+		fmt.Printf("summary: installed %d, skipped %d\n", len(summary.Installed), len(summary.Skipped))
+	}
 }
 
 func firstNonEmpty(values ...string) string {
@@ -713,17 +1081,56 @@ const rootHelp = `elementary-claw CLI
 
 Commands:
   setup                 Initialize user-local state and workspace
-	gateway serve         Run the local runtime gateway HTTP server
+  gateway serve         Run the local runtime gateway HTTP server
   gateway status        Inspect whether config, auth and sessions exist
   bootstrap first-message
                         Generate the first bootstrap session from workspace files
-	providers             Validate provider layers like github-copilot and copilot-proxy
+  providers             Validate provider layers like github-copilot and copilot-proxy
   sessions list         List persisted sessions
   skills list           List loaded skills
   skills info <name>    Show details for a specific skill
   skills install <src>  Install a skill from path or URL
+  skills install-defaults
+                        Seed Samantha with the default remote skill catalog
   skills remove <name>  Remove a managed skill
   skills check          Verify skill requirements
+  cron                  Manage scheduled jobs and automation
+`
+
+const cronHelp = `elementary-claw cron
+
+Subcommands:
+  list                  List all cron jobs
+  status                Show cron service status
+  get <job-id>          Get details for a specific job
+  create --name <name> --schedule <json> --payload <json> [options]
+                        Create a new cron job
+                        Options: --delivery {announce|webhook|none}
+                                 --webhook-url <url>
+  run <job-id>          Execute a job immediately
+  update <job-id> [options]
+                        Update a job (--name, --enabled, --patch)
+  delete <job-id>       Delete a job
+
+Examples:
+  # List jobs
+  claw cron list
+
+  # Create a daily job at 9 AM
+  claw cron create --name "Daily" \
+    --schedule '{"kind":"cron","expr":"0 9 * * *"}' \
+    --payload '{"kind":"systemEvent","data":{}}'
+
+  # Create an interval job every 5 minutes
+  claw cron create --name "Every5Min" \
+    --schedule '{"kind":"interval","intervalMs":300000}' \
+    --payload '{"kind":"systemEvent"}'
+
+  # Run a job now
+  claw cron run <job-id>
+
+  # Delete a job
+  claw cron delete <job-id>
 `
 
 const gatewayHelp = `elementary-claw gateway
@@ -767,6 +1174,7 @@ Subcommands:
   list [--json]         List all loaded skills
   info <name>           Show details and requirements for a specific skill
   check                 Verify that all skill requirements are satisfied
-  install <path|url>    Install a skill from a local path or URL
+	install <path|url>    Install a skill or skill collection from a local path or URL
+	install-defaults      Install the default Anthropic-compatible skill catalog for Samantha
   remove <name>         Remove a managed skill
 `

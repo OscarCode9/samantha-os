@@ -6,11 +6,11 @@
 
 | Role | Font | Fallback | Weight |
 |------|------|----------|--------|
-| **Display** | `"Doto"` | `"Space Mono", monospace` | 400–700, variable dot-size |
+| **Display** | `"Space Grotesk"` | `"Inter", system-ui, sans-serif` | 300–700 |
 | **Body / UI** | `"Space Grotesk"` | `"DM Sans", system-ui, sans-serif` | Light 300, Regular 400, Medium 500, Bold 700 |
 | **Data / Labels** | `"Space Mono"` | `"JetBrains Mono", "SF Mono", monospace` | Regular 400, Bold 700 |
 
-**Why these fonts:** Doto = variable dot-matrix (closest to NDot 57). Space Grotesk + Space Mono by Colophon Foundry — same foundry as Nothing's actual typefaces. Shared design DNA.
+**Why these fonts:** Space Grotesk + Space Mono by Colophon Foundry — same foundry as Nothing's actual typefaces. Shared design DNA. No dot-matrix fonts.
 
 ### Type Scale
 
@@ -28,10 +28,10 @@
 
 ### Typographic Rules
 
-- **Doto:** 36px+ only, tight tracking, never for body text
+- **Display:** Space Grotesk, 36px+ only, tight tracking, never for body text
 - **Labels:** Always Space Mono, ALL CAPS, 0.06–0.1em spacing, 11–12px ("instrument panel" labels)
 - **Data/Numbers:** Always Space Mono. Units as `--label` size, slightly raised, adjacent
-- **Hierarchy:** display (Doto) > heading (Space Grotesk) > label (Space Mono caps) > body (Space Grotesk). Four levels max.
+- **Hierarchy:** display (Space Grotesk) > heading (Space Grotesk) > label (Space Mono caps) > body (Space Grotesk). Four levels max.
 
 ---
 
@@ -125,7 +125,7 @@
 
 ## 6. DOT-MATRIX MOTIF
 
-**When to use:** Hero typography (Doto), decorative grid backgrounds, dot-grid data viz, loading indicators, empty state illustrations.
+**When to use:** Hero typography (Space Grotesk), decorative grid backgrounds, dot-grid data viz, loading indicators, empty state illustrations.
 
 ### CSS Implementation
 ```css

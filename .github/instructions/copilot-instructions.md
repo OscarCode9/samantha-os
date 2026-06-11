@@ -1,5 +1,9 @@
 # Copilot Instructions — elementary-claw
 
+## General Rules
+
+- **NEVER use emojis** in code, comments, commit messages, documentation, or any output. Zero exceptions.
+
 ## Reference Documentation
 
 When working with Vala, GTK 4, Granite 7, or elementary OS code in this repository, **always** consult the official elementary developer documentation before suggesting fixes or generating code:
@@ -105,6 +109,7 @@ Why each variable is needed:
 
 ### GTK 4 CSS Rules
 
+- **CSS MUST live in a dedicated `.css` file** (e.g. `data/styles/panel-sam.css`). Never embed CSS strings directly inside Vala source files. Load the stylesheet at application startup via `Gtk.CssProvider` and `Gtk.StyleContext.add_provider_for_display` (or the `[CCode]` extern wrapper for GTK 4.10+).
 - GTK 4 does **NOT** support percentage keyframe selectors (`0%, 100%`). Use only `from` and `to`. For bounce/pulse effects, use `from`/`to` with `animation-direction: alternate`.
 - GTK 4 does **NOT** support `box-shadow` — use `outline` or `border`.
 - GTK 4 does **NOT** support `gap` — use `border-spacing` on parent.

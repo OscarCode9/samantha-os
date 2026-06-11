@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+speechrecognition
+pyaudio
+sounddevice
+chatterbox-tts
+torch
+torchaudio
+soundfile
+numpy
