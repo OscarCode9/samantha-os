@@ -564,6 +564,22 @@ const TOOLS_DATA: ToolData[] = [
     }
   },
   {
+    name: 'delete_calendar_event',
+    category: 'Productivity Suite',
+    description: {
+      en: 'Delete a specific event in elementary Calendar by its UID.',
+      es: 'Elimina un evento específico en el Calendario de elementary OS usando su UID.'
+    },
+    parameters: [
+      { name: 'calendar_uid', type: 'string', required: true, description: { en: 'UID of the event to delete.', es: 'UID del evento a eliminar.' } }
+    ],
+    example: {
+      prompt: { en: 'Delete calendar event with UID cal_99a823b', es: 'Elimina el evento de calendario con UID cal_99a823b' },
+      arguments: '{\n  "calendar_uid": "cal_99a823b"\n}',
+      response: '{\n  "ok": true,\n  "calendar_uid": "cal_99a823b"\n}'
+    }
+  },
+  {
     name: 'list_contacts',
     category: 'Productivity Suite',
     description: {
