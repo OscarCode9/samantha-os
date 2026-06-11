@@ -24,6 +24,7 @@ interface ToolData {
 
 const CATEGORIES = [
   'Overview',
+  'Quick Start',
   'Files & Directories',
   'System & OS Control',
   'Productivity Suite',
@@ -1004,6 +1005,7 @@ export default function Docs() {
     const isEs = currentLang === 'es';
     switch (cat) {
       case 'Overview': return isEs ? 'Introducción' : 'Overview';
+      case 'Quick Start': return isEs ? 'Guía Rápida' : 'Quick Start';
       case 'Files & Directories': return isEs ? 'Archivos y Directorios' : 'Files & Directories';
       case 'System & OS Control': return isEs ? 'Control de Sistema' : 'System & OS Control';
       case 'Productivity Suite': return isEs ? 'Productividad' : 'Productivity Suite';
@@ -1016,7 +1018,7 @@ export default function Docs() {
   // Filter tools based on query & category
   const filteredTools = useMemo(() => {
     let list = TOOLS_DATA;
-    if (selectedCategory !== 'Overview') {
+    if (selectedCategory !== 'Overview' && selectedCategory !== 'Quick Start') {
       list = list.filter(t => t.category === selectedCategory);
     }
     if (searchQuery.trim() !== '') {
@@ -1118,6 +1120,78 @@ export default function Docs() {
             <p style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '24px' }}>
               {t('docs.availableCategoriesText')}
             </p>
+          </div>
+        ) : selectedCategory === 'Quick Start' && !searchQuery ? (
+          <div className="docs-quickstart animate-fade-in">
+            <div className="label">{t('docs.quickStart')}</div>
+            <h1 className="docs-title">{t('docs.quickstartTitle')}</h1>
+            
+            <p className="docs-lead">
+              {t('docs.quickstartIntro')}
+            </p>
+
+            <div className="overview-card">
+              <h3>{t('docs.quickstartStep1Title')}</h3>
+              <p style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '16px' }}>
+                {t('docs.quickstartStep1Desc')}
+              </p>
+              <div>
+                <div className="example-header" style={{ marginBottom: '8px' }}>
+                  <span className="code-label label">BASH</span>
+                  <button 
+                    onClick={() => copyToClipboard('sudo apt update && sudo apt install -y build-essential meson ninja-build valac libwingpanel-dev libsoup-3.0-dev libjson-glib-dev libgranite-7-dev libgtk-3-dev golang-go', 'dep-cmd')}
+                    className="copy-btn font-mono"
+                  >
+                    {copiedText === 'dep-cmd' ? t('docs.copied') : t('docs.copyArgs')}
+                  </button>
+                </div>
+                <pre style={{ background: 'rgba(0, 0, 0, 0.25)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: '8px', padding: '16px', fontSize: '13px', overflowX: 'auto', color: '#ECEFF1', fontFamily: 'Space Mono, monospace' }}>
+                  {`sudo apt update\nsudo apt install -y \\\n  build-essential \\\n  meson \\\n  ninja-build \\\n  valac \\\n  libwingpanel-dev \\\n  libsoup-3.0-dev \\\n  libjson-glib-dev \\\n  libgranite-7-dev \\\n  libgtk-3-dev \\\n  golang-go`}
+                </pre>
+              </div>
+            </div>
+
+            <div className="overview-card">
+              <h3>{t('docs.quickstartStep2Title')}</h3>
+              <p style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '16px' }}>
+                {t('docs.quickstartStep2Desc')}
+              </p>
+              <div>
+                <div className="example-header" style={{ marginBottom: '8px' }}>
+                  <span className="code-label label">BASH</span>
+                  <button 
+                    onClick={() => copyToClipboard('go build -o claw ./cmd/claw\nsudo install -m 0755 claw /usr/local/bin/claw\nsudo install -d /etc/systemd/user\nsudo install -m 0644 deployments/systemd/elementary-claw.service /etc/systemd/user/elementary-claw.service\nsystemctl --user daemon-reload\nsystemctl --user enable --now elementary-claw.service', 'go-cmd')}
+                    className="copy-btn font-mono"
+                  >
+                    {copiedText === 'go-cmd' ? t('docs.copied') : t('docs.copyArgs')}
+                  </button>
+                </div>
+                <pre style={{ background: 'rgba(0, 0, 0, 0.25)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: '8px', padding: '16px', fontSize: '13px', overflowX: 'auto', color: '#ECEFF1', fontFamily: 'Space Mono, monospace' }}>
+                  {`# Build the runtime gateway\ngo build -o claw ./cmd/claw\n\n# Install the binary\nsudo install -m 0755 claw /usr/local/bin/claw\n\n# Register and enable the systemd user service\nsudo install -d /etc/systemd/user\nsudo install -m 0644 deployments/systemd/elementary-claw.service /etc/systemd/user/elementary-claw.service\nsystemctl --user daemon-reload\nsystemctl --user enable --now elementary-claw.service`}
+                </pre>
+              </div>
+            </div>
+
+            <div className="overview-card">
+              <h3>{t('docs.quickstartStep3Title')}</h3>
+              <p style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '16px' }}>
+                {t('docs.quickstartStep3Desc')}
+              </p>
+              <div>
+                <div className="example-header" style={{ marginBottom: '8px' }}>
+                  <span className="code-label label">BASH</span>
+                  <button 
+                    onClick={() => copyToClipboard('cd panel-sam\nmeson setup build --prefix=/usr\nninja -C build\nsudo ninja -C build install\nkillall io.elementary.wingpanel', 'vala-cmd')}
+                    className="copy-btn font-mono"
+                  >
+                    {copiedText === 'vala-cmd' ? t('docs.copied') : t('docs.copyArgs')}
+                  </button>
+                </div>
+                <pre style={{ background: 'rgba(0, 0, 0, 0.25)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: '8px', padding: '16px', fontSize: '13px', overflowX: 'auto', color: '#ECEFF1', fontFamily: 'Space Mono, monospace' }}>
+                  {`# Navigate to panel directory\ncd panel-sam\n\n# Configure build system with system prefix\nmeson setup build --prefix=/usr\n\n# Compile the project\nninja -C build\n\n# Install the indicator module\nsudo ninja -C build install\n\n# Restart Wingpanel to load the new indicator\nkillall io.elementary.wingpanel`}
+                </pre>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="docs-tools-list">
