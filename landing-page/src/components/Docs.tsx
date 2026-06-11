@@ -1167,7 +1167,7 @@ export default function Docs() {
                   </button>
                 </div>
                 <pre style={{ background: 'rgba(0, 0, 0, 0.25)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: '8px', padding: '16px', fontSize: '13px', overflowX: 'auto', color: '#ECEFF1', fontFamily: 'Space Mono, monospace' }}>
-                  {`# Build the runtime gateway\ngo build -o claw ./cmd/claw\n\n# Install the binary\nsudo install -m 0755 claw /usr/local/bin/claw\n\n# Register and enable the systemd user service\nsudo install -d /etc/systemd/user\nsudo install -m 0644 deployments/systemd/elementary-claw.service /etc/systemd/user/elementary-claw.service\nsystemctl --user daemon-reload\nsystemctl --user enable --now elementary-claw.service`}
+                  {`# Build the Samantha engine\ngo build -o claw ./cmd/claw\n\n# Install the binary\nsudo install -m 0755 claw /usr/local/bin/claw\n\n# Register and enable the systemd user service for Samantha\nsudo install -d /etc/systemd/user\nsudo install -m 0644 deployments/systemd/elementary-claw.service /etc/systemd/user/elementary-claw.service\nsystemctl --user daemon-reload\nsystemctl --user enable --now elementary-claw.service`}
                 </pre>
               </div>
             </div>
