@@ -389,6 +389,7 @@ func (app *App) buildToolRegistry(workdir string) *tools.Registry {
 	registry.Register(tools.NewCreateDailyNotificationJobWithCalendarTool(""))
 	registry.Register(tools.NewCreateCalendarEventTool())
 	registry.Register(tools.NewModifyCalendarEventTool())
+	registry.Register(tools.NewDeleteCalendarEventTool())
 	registry.Register(tools.NewListCalendarEventsTool())
 	registry.Register(tools.NewListContactsTool())
 	registry.Register(tools.NewSearchContactsTool())
