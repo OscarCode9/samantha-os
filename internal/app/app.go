@@ -374,6 +374,7 @@ func (app *App) buildToolRegistry(workdir string) *tools.Registry {
 	}
 
 	registry := tools.NewRegistry()
+	registry.Register(tools.NewOpenAppTool())
 	registry.Register(tools.NewExecTool(tools.ExecToolOptions{DefaultWorkdir: workdir}))
 	registry.Register(tools.NewSaveMemoryTool(workdir))
 	registry.Register(tools.NewReadFileTool(workdir))
