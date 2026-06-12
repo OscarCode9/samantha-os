@@ -405,6 +405,54 @@ public class Sam.GatewayClient : GLib.Object {
             if (error_class == "github-rate-limit") {
                 return OPENAI_CTA_PREFIX + err_body;
             }
+
+            var parser = new Json.Parser ();
+            try {
+                parser.load_from_data (err_body, -1);
+                unowned Json.Node? root = parser.get_root ();
+                if (root != null && root.get_node_type () == Json.NodeType.OBJECT) {
+                    unowned Json.Object root_obj = root.get_object ();
+                    if (root_obj.has_member ("error")) {
+                        unowned Json.Object error_obj = root_obj.get_object_member ("error");
+                        if (error_obj.has_member ("type") && error_obj.get_string_member ("type") == "usage_limit_reached") {
+                            int64 resets_in = 0;
+                            if (error_obj.has_member ("resets_in_seconds")) {
+                                resets_in = error_obj.get_int_member ("resets_in_seconds");
+                            }
+                            string plan = "Plus";
+                            if (error_obj.has_member ("plan_type")) {
+                                plan = error_obj.get_string_member ("plan_type");
+                                if (plan == "plus") {
+                                    plan = "Plus";
+                                } else if (plan == "free") {
+                                    plan = "Free";
+                                }
+                            }
+                            
+                            int64 hours = resets_in / 3600;
+                            int64 minutes = (resets_in % 3600) / 60;
+                            
+                            string reset_time = "";
+                            if (hours > 0) {
+                                reset_time += "%lld hora%s".printf (hours, hours > 1 ? "s" : "");
+                            }
+                            if (minutes > 0) {
+                                if (hours > 0) {
+                                    reset_time += " y ";
+                                }
+                                reset_time += "%lld minuto%s".printf (minutes, minutes > 1 ? "s" : "");
+                            }
+                            if (reset_time == "") {
+                                reset_time = "unos segundos";
+                            }
+                            
+                            return "Límite de uso alcanzado para tu plan %s. Se restablecerá en %s.".printf (plan, reset_time);
+                        }
+                    }
+                }
+            } catch (GLib.Error e) {
+                // fall back to raw err_body
+            }
         }
         return err_body;
     }
