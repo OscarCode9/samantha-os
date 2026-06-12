@@ -1138,6 +1138,33 @@ export default function Docs() {
               <p>{t('docs.howWorksText')}</p>
             </div>
 
+            <div className="overview-card">
+              <h3>{currentLang === 'es' ? 'Repositorio del Proyecto' : 'Project Repository'}</h3>
+              <p>
+                {currentLang === 'es'
+                  ? 'El código fuente completo de Samantha OS está disponible públicamente en GitHub. Puedes explorar el código, reportar fallos, proponer mejoras o contribuir al proyecto en:'
+                  : 'The complete source code of Samantha OS is publicly available on GitHub. You can explore the codebase, report bugs, propose new features, or contribute to the project at:'}
+              </p>
+              <p style={{ marginTop: '12px' }}>
+                <a
+                  href="https://github.com/OscarCode9/samantha-os"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="docs-link"
+                  style={{
+                    color: '#FF6E54',
+                    textDecoration: 'none',
+                    fontWeight: 'bold',
+                    borderBottom: '1px solid #FF6E54',
+                    paddingBottom: '2px',
+                    fontFamily: 'Space Mono, monospace'
+                  }}
+                >
+                  https://github.com/OscarCode9/samantha-os
+                </a>
+              </p>
+            </div>
+
             <div className="overview-grid">
               <div className="overview-item">
                 <span className="number">01</span>

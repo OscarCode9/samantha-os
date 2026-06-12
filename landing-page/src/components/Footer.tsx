@@ -11,7 +11,7 @@ export default function Footer() {
           <ul className="footer-links">
             <li><a href="#about">{t('footer.about')}</a></li>
             <li><a href="#docs">{t('footer.docs')}</a></li>
-            <li><a href="#github">{t('footer.github')}</a></li>
+            <li><a href="https://github.com/OscarCode9/samantha-os" target="_blank" rel="noopener noreferrer">{t('footer.github')}</a></li>
             <li><a href="#privacy">{t('footer.privacy')}</a></li>
           </ul>
         </nav>
