@@ -1152,10 +1152,10 @@ export default function Docs() {
                   rel="noopener noreferrer"
                   className="docs-link"
                   style={{
-                    color: '#FF6E54',
+                    color: '#000000',
                     textDecoration: 'none',
                     fontWeight: 'bold',
-                    borderBottom: '1px solid #FF6E54',
+                    borderBottom: '1px solid #000000',
                     paddingBottom: '2px',
                     fontFamily: 'Space Mono, monospace'
                   }}
