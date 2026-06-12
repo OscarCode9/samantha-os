@@ -14,9 +14,9 @@ const resources = {
         eyebrow: 'Samantha OS',
         title: 'Your OS finally has a mind.',
         subtitle: 'An AI assistant that lives in your computer — not in a browser tab.',
-        comingSoon: 'Coming soon',
+        tryBeta: 'Try Beta',
         watchFilm: 'Watch the film',
-        trust: 'Built for Samantha OS. GitHub Copilot powered.',
+        trust: 'Built for Samantha OS. Powered by GitHub Copilot and ChatGPT.',
         mockupTitle: 'Samantha OS.',
         mockupSubtitle: 'The first AI-native operating system.',
         getStarted: 'Get Started'
@@ -112,9 +112,9 @@ const resources = {
         eyebrow: 'Samantha OS',
         title: 'Tu sistema operativo finalmente tiene mente.',
         subtitle: 'Una asistente de IA que vive en tu computadora, no en una pestaña del navegador.',
-        comingSoon: 'Próximamente',
+        tryBeta: 'Probar Beta',
         watchFilm: 'Ver el video',
-        trust: 'Creado para Samantha OS. Potenciado por GitHub Copilot.',
+        trust: 'Creado para Samantha OS. Potenciado por GitHub Copilot y ChatGPT.',
         mockupTitle: 'Samantha OS.',
         mockupSubtitle: 'El primer sistema operativo nativo de IA.',
         getStarted: 'Comenzar'

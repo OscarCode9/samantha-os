@@ -15,7 +15,7 @@ export default function Hero() {
             {t('hero.subtitle')}
           </p>
           <div className="hero-ctas">
-            <a href="#preorder" className="btn-primary">{t('hero.comingSoon')}</a>
+            <a href="#docs" className="btn-primary">{t('hero.tryBeta')}</a>
             <a href="#film" className="btn-ghost">{t('hero.watchFilm')}</a>
           </div>
           <div className="hero-trust">
