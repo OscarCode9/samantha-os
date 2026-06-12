@@ -194,7 +194,7 @@ public class Sam.Indicator : Wingpanel.Indicator {
         title.get_style_context ().add_class ("sam-provider-title");
 
         var copy = new Gtk.Label (
-            "Para comenzar a usar Samantha, conecta tu cuenta de GitHub Copilot o ingresa tus credenciales de OpenAI."
+            "Para comenzar a usar Samantha, conecta tu cuenta de GitHub Copilot o conecta tu suscripción de ChatGPT."
         ) {
             halign = Gtk.Align.START,
             xalign = 0.0f,
@@ -212,13 +212,29 @@ public class Sam.Indicator : Wingpanel.Indicator {
         };
         status_label.get_style_context ().add_class ("sam-provider-status");
 
-        // GitHub Copilot section
+        // Provider Selector
+        var chatgpt_radio = new Gtk.RadioButton.with_label (null, "Suscripción de ChatGPT") {
+            active = true
+        };
+        chatgpt_radio.get_style_context ().add_class ("sam-provider-radio");
+
+        var github_radio = new Gtk.RadioButton.with_label_from_widget (chatgpt_radio, "GitHub Copilot");
+        github_radio.get_style_context ().add_class ("sam-provider-radio");
+
+        var radio_box = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 16) {
+            halign = Gtk.Align.CENTER,
+            margin_bottom = 12
+        };
+        radio_box.pack_start (chatgpt_radio, false, false, 0);
+        radio_box.pack_start (github_radio, false, false, 0);
+
+        // GitHub Copilot View Box
+        var github_view_box = new Gtk.Box (Gtk.Orientation.VERTICAL, 10);
         var github_btn = new Gtk.Button.with_label ("Conectar con GitHub Copilot") {
             halign = Gtk.Align.START
         };
         github_btn.get_style_context ().add_class ("sam-provider-btn");
-
-        // GitHub flow UI elements
+        
         var github_code_box = new Gtk.Box (Gtk.Orientation.VERTICAL, 6) {
             visible = false
         };
@@ -237,24 +253,20 @@ public class Sam.Indicator : Wingpanel.Indicator {
             selectable = true
         };
         github_code_lbl.get_style_context ().add_class ("sam-provider-title");
-
-        var github_open_btn = new Gtk.Button.with_label ("Abrir GitHub en el navegador") {
-            halign = Gtk.Align.START
-        };
-        github_open_btn.get_style_context ().add_class ("sam-provider-btn");
-
+        
         github_code_box.pack_start (github_url_hint, false, false, 0);
         github_code_box.pack_start (github_code_lbl, false, false, 8);
-        github_code_box.pack_start (github_open_btn, false, false, 0);
+        
+        github_view_box.pack_start (github_btn, false, false, 0);
+        github_view_box.pack_start (github_code_box, false, false, 0);
 
-        // OpenAI/ChatGPT section
-        var openai_btn = new Gtk.Button.with_label ("Conectar con OpenAI / ChatGPT") {
+        // ChatGPT View Box
+        var chatgpt_view_box = new Gtk.Box (Gtk.Orientation.VERTICAL, 10);
+        var chatgpt_auth_btn = new Gtk.Button.with_label ("Conectar con ChatGPT") {
             halign = Gtk.Align.START
         };
-        openai_btn.get_style_context ().add_class ("sam-provider-btn");
+        chatgpt_auth_btn.get_style_context ().add_class ("sam-provider-btn");
 
-        // We can reuse the sub-revealers or nested forms for OpenAI connection:
-        // 1. ChatGPT subscription
         var subscription_hint = new Gtk.Label (
             "Abriremos ChatGPT en tu navegador. Cuando termine, copia la URL completa de redirección y pégala aquí."
         ) {
@@ -291,70 +303,35 @@ public class Sam.Indicator : Wingpanel.Indicator {
         };
         openai_sub_revealer.add (openai_sub_box);
 
-        // 2. API Key option
-        var api_key_reveal_btn = new Gtk.Button.with_label ("Usar API key de OpenAI en su lugar") {
-            halign = Gtk.Align.START
-        };
-        api_key_reveal_btn.get_style_context ().add_class ("sam-provider-btn");
-
-        var api_key_entry = new Gtk.Entry () {
-            placeholder_text = "sk-...",
-            hexpand = true,
-            has_frame = false,
-            visibility = false
-        };
-        api_key_entry.get_style_context ().add_class ("sam-provider-entry");
-
-        var connect_api_key_btn = new Gtk.Button.with_label ("Guardar API key") {
-            halign = Gtk.Align.START
-        };
-        connect_api_key_btn.get_style_context ().add_class ("sam-provider-btn");
-
-        var openai_api_row = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 8);
-        openai_api_row.pack_start (api_key_entry, true, true, 0);
-        openai_api_row.pack_start (connect_api_key_btn, false, false, 0);
-
-        var openai_api_box = new Gtk.Box (Gtk.Orientation.VERTICAL, 8);
-        openai_api_box.pack_start (openai_api_row, false, false, 0);
-
-        var openai_api_revealer = new Gtk.Revealer () {
-            transition_type = Gtk.RevealerTransitionType.SLIDE_DOWN,
-            reveal_child = false
-        };
-        openai_api_revealer.add (openai_api_box);
-
-        var openai_options_box = new Gtk.Box (Gtk.Orientation.VERTICAL, 8) {
-            visible = false
-        };
-        var opt1_lbl = new Gtk.Label ("Opción 1: Cuenta ChatGPT Plus") {
-            halign = Gtk.Align.START,
-            xalign = 0.0f
-        };
-        opt1_lbl.get_style_context ().add_class ("sam-provider-title");
-        var chatgpt_auth_btn = new Gtk.Button.with_label ("Conectar con ChatGPT") {
-            halign = Gtk.Align.START
-        };
-        chatgpt_auth_btn.get_style_context ().add_class ("sam-provider-btn");
-        openai_options_box.pack_start (opt1_lbl, false, false, 0);
-        openai_options_box.pack_start (chatgpt_auth_btn, false, false, 0);
-        openai_options_box.pack_start (openai_sub_revealer, false, false, 0);
-        var opt2_lbl = new Gtk.Label ("Opción 2: API de OpenAI") {
-            halign = Gtk.Align.START,
-            xalign = 0.0f
-        };
-        opt2_lbl.get_style_context ().add_class ("sam-provider-title");
-        openai_options_box.pack_start (opt2_lbl, false, false, 4);
-        openai_options_box.pack_start (api_key_reveal_btn, false, false, 0);
-        openai_options_box.pack_start (openai_api_revealer, false, false, 0);
+        chatgpt_view_box.pack_start (chatgpt_auth_btn, false, false, 0);
+        chatgpt_view_box.pack_start (openai_sub_revealer, false, false, 0);
 
         // Wire events!
         string verification_uri = "";
         string auth_url = "";
 
+        chatgpt_radio.toggled.connect (() => {
+            if (chatgpt_radio.active) {
+                chatgpt_view_box.show_all ();
+                github_view_box.hide ();
+                status_label.visible = false;
+            }
+        });
+
+        github_radio.toggled.connect (() => {
+            if (github_radio.active) {
+                chatgpt_view_box.hide ();
+                github_view_box.show_all ();
+                status_label.visible = false;
+            }
+        });
+
         github_btn.clicked.connect (() => {
             github_btn.sensitive = false;
-            openai_btn.sensitive = false;
-            openai_options_box.visible = false;
+            chatgpt_auth_btn.sensitive = false;
+            github_radio.sensitive = false;
+            chatgpt_radio.sensitive = false;
+            openai_sub_revealer.reveal_child = false;
             status_label.label = "Conectando con GitHub…";
             status_label.visible = true;
 
@@ -370,7 +347,9 @@ public class Sam.Indicator : Wingpanel.Indicator {
                 GLib.Idle.add (() => {
                     if (device_resp == null) {
                         github_btn.sensitive = true;
-                        openai_btn.sensitive = true;
+                        chatgpt_auth_btn.sensitive = true;
+                        github_radio.sensitive = true;
+                        chatgpt_radio.sensitive = true;
                         status_label.label = "Error al contactar a GitHub: " + error_message;
                         status_label.visible = true;
                         return GLib.Source.REMOVE;
@@ -404,7 +383,9 @@ public class Sam.Indicator : Wingpanel.Indicator {
                             GLib.Idle.add (() => {
                                 if (token == "") {
                                     github_btn.sensitive = true;
-                                    openai_btn.sensitive = true;
+                                    chatgpt_auth_btn.sensitive = true;
+                                    github_radio.sensitive = true;
+                                    chatgpt_radio.sensitive = true;
                                     github_code_box.visible = false;
                                     status_label.label = "Inicio de sesión cancelado o expirado: " + poll_error;
                                     status_label.visible = true;
@@ -431,7 +412,9 @@ public class Sam.Indicator : Wingpanel.Indicator {
                                             });
                                         } else {
                                             github_btn.sensitive = true;
-                                            openai_btn.sensitive = true;
+                                            chatgpt_auth_btn.sensitive = true;
+                                            github_radio.sensitive = true;
+                                            chatgpt_radio.sensitive = true;
                                             github_code_box.visible = false;
                                             status_label.label = "Error al guardar token: " + conn_error;
                                         }
@@ -448,25 +431,11 @@ public class Sam.Indicator : Wingpanel.Indicator {
             });
         });
 
-        github_open_btn.clicked.connect (() => {
-            if (verification_uri != "") {
-                try {
-                    Gtk.show_uri_on_window (null, verification_uri, Gdk.CURRENT_TIME);
-                } catch (GLib.Error e) {
-                    warning ("Could not launch browser: %s", e.message);
-                }
-            }
-        });
-
-        openai_btn.clicked.connect (() => {
-            openai_options_box.visible = !openai_options_box.visible;
-            github_code_box.visible = false;
-            github_btn.sensitive = true;
-            status_label.visible = false;
-        });
-
         chatgpt_auth_btn.clicked.connect (() => {
             chatgpt_auth_btn.sensitive = false;
+            github_btn.sensitive = false;
+            github_radio.sensitive = false;
+            chatgpt_radio.sensitive = false;
             status_label.label = "Abriendo conexión con ChatGPT…";
             status_label.visible = true;
 
@@ -481,6 +450,9 @@ public class Sam.Indicator : Wingpanel.Indicator {
 
                 GLib.Idle.add (() => {
                     chatgpt_auth_btn.sensitive = true;
+                    github_btn.sensitive = true;
+                    github_radio.sensitive = true;
+                    chatgpt_radio.sensitive = true;
                     if (started_auth_url == "") {
                         status_label.label = "Error: " + error_message;
                         return GLib.Source.REMOVE;
@@ -508,6 +480,10 @@ public class Sam.Indicator : Wingpanel.Indicator {
             }
 
             finish_subscription_btn.sensitive = false;
+            chatgpt_auth_btn.sensitive = false;
+            github_btn.sensitive = false;
+            github_radio.sensitive = false;
+            chatgpt_radio.sensitive = false;
             status_label.label = "Guardando suscripción ChatGPT…";
             gateway.finish_openai_codex_subscription.begin (raw_url, (obj, res) => {
                 string error_message = "";
@@ -521,48 +497,12 @@ public class Sam.Indicator : Wingpanel.Indicator {
 
                 GLib.Idle.add (() => {
                     finish_subscription_btn.sensitive = true;
+                    chatgpt_auth_btn.sensitive = true;
+                    github_btn.sensitive = true;
+                    github_radio.sensitive = true;
+                    chatgpt_radio.sensitive = true;
                     if (success) {
                         status_label.label = "ChatGPT conectado con éxito. Reiniciando…";
-                        GLib.Timeout.add (1500, () => {
-                            check_auth_and_sync ();
-                            return GLib.Source.REMOVE;
-                        });
-                    } else {
-                        status_label.label = "Error: " + error_message;
-                    }
-                    return GLib.Source.REMOVE;
-                });
-            });
-        });
-
-        api_key_reveal_btn.clicked.connect (() => {
-            openai_api_revealer.reveal_child = !openai_api_revealer.reveal_child;
-        });
-
-        connect_api_key_btn.clicked.connect (() => {
-            var api_key = api_key_entry.text.strip ();
-            if (api_key.length == 0) {
-                status_label.label = "Pega tu API key de OpenAI.";
-                status_label.visible = true;
-                return;
-            }
-
-            connect_api_key_btn.sensitive = false;
-            status_label.label = "Guardando API key…";
-            gateway.connect_openai_codex_api_key.begin (api_key, (obj, res) => {
-                string error_message = "";
-                bool success = false;
-                try {
-                    gateway.connect_openai_codex_api_key.end (res);
-                    success = true;
-                } catch (GLib.Error e) {
-                    error_message = e.message;
-                }
-
-                GLib.Idle.add (() => {
-                    connect_api_key_btn.sensitive = true;
-                    if (success) {
-                        status_label.label = "API key conectada con éxito. Reiniciando…";
                         GLib.Timeout.add (1500, () => {
                             check_auth_and_sync ();
                             return GLib.Source.REMOVE;
@@ -579,14 +519,17 @@ public class Sam.Indicator : Wingpanel.Indicator {
         card.get_style_context ().add_class ("sam-provider-card");
         card.pack_start (title, false, false, 0);
         card.pack_start (copy, false, false, 0);
-        card.pack_start (github_btn, false, false, 0);
-        card.pack_start (github_code_box, false, false, 0);
-        card.pack_start (openai_btn, false, false, 0);
-        card.pack_start (openai_options_box, false, false, 0);
+        card.pack_start (radio_box, false, false, 0);
+        card.pack_start (github_view_box, false, false, 0);
+        card.pack_start (chatgpt_view_box, false, false, 0);
         card.pack_start (status_label, false, false, 0);
 
         result_container.add (card);
         result_container.show_all ();
+
+        // Ensure initially we only show ChatGPT and hide GitHub view box (so both are not visible simultaneously)
+        chatgpt_view_box.show_all ();
+        github_view_box.hide ();
     }
 
     public override void closed () { }

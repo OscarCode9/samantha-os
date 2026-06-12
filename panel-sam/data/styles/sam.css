@@ -213,6 +213,28 @@ spinner.sam-spinner {
     font-size: 12px;
 }
 
+/* Placeholder colors */
+.sam-popover entry placeholder,
+.sam-popover entry.placeholder,
+.sam-popover placeholder,
+entry.sam-entry placeholder,
+entry.sam-provider-entry placeholder,
+entry.sam-entry.placeholder,
+entry.sam-provider-entry.placeholder {
+    color: #FFFFFF;
+    opacity: 1.0;
+}
+
+/* Radio button label text color */
+.sam-provider-radio,
+.sam-provider-radio label,
+radiobutton.sam-provider-radio,
+radiobutton.sam-provider-radio label,
+checkbutton.sam-provider-radio,
+checkbutton.sam-provider-radio label {
+    color: #FFFFFF;
+}
+
 entry.sam-provider-entry,
 entry.sam-provider-entry:focus,
 entry.sam-provider-entry:active,

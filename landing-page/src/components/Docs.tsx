@@ -192,6 +192,30 @@ const TOOLS_DATA: ToolData[] = [
     }
   },
   {
+    name: 'open_app',
+    category: 'System & OS Control',
+    description: {
+      en: 'Open a system application like calendar, mail, files, terminal, settings, music, browser, or a custom desktop ID/command.',
+      es: 'Abre una aplicación del sistema como calendar, mail, files, terminal, settings, music, browser, o un ID de desktop/comando personalizado.'
+    },
+    parameters: [
+      {
+        name: 'app',
+        type: 'string',
+        required: true,
+        description: {
+          en: "The application to open. Use 'calendar', 'mail', 'files', 'terminal', 'settings', 'music', 'browser', or a custom desktop ID / command.",
+          es: "La aplicación a abrir. Usa 'calendar', 'mail', 'files', 'terminal', 'settings', 'music', 'browser', o un ID de desktop / comando personalizado."
+        }
+      }
+    ],
+    example: {
+      prompt: { en: 'Open the settings app', es: 'Abre la configuración del sistema' },
+      arguments: '{\n  "app": "settings"\n}',
+      response: '{\n  "ok": true,\n  "app": "settings",\n  "command": "io.elementary.switchboard"\n}'
+    }
+  },
+  {
     name: 'audio_volume',
     category: 'System & OS Control',
     description: {
