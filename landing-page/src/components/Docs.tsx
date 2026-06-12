@@ -1227,14 +1227,14 @@ export default function Docs() {
                 <div className="example-header" style={{ marginBottom: '8px' }}>
                   <span className="code-label label">BASH</span>
                   <button 
-                    onClick={() => copyToClipboard('sudo apt update && sudo apt install -y build-essential meson ninja-build valac libwingpanel-dev libsoup-3.0-dev libjson-glib-dev libgranite-7-dev libgtk-3-dev golang-go', 'dep-cmd')}
+                    onClick={() => copyToClipboard('sudo apt update && sudo apt install -y build-essential meson ninja-build valac libwingpanel-dev libsoup-3.0-dev libjson-glib-dev libgranite-7-dev libgtk-3-dev golang-go weasyprint', 'dep-cmd')}
                     className="copy-btn font-mono"
                   >
                     {copiedText === 'dep-cmd' ? t('docs.copied') : t('docs.copyArgs')}
                   </button>
                 </div>
                 <pre style={{ background: 'rgba(0, 0, 0, 0.25)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: '8px', padding: '16px', fontSize: '13px', overflowX: 'auto', color: '#ECEFF1', fontFamily: 'Space Mono, monospace' }}>
-                  {`sudo apt update\nsudo apt install -y \\\n  build-essential \\\n  meson \\\n  ninja-build \\\n  valac \\\n  libwingpanel-dev \\\n  libsoup-3.0-dev \\\n  libjson-glib-dev \\\n  libgranite-7-dev \\\n  libgtk-3-dev \\\n  golang-go`}
+                  {`sudo apt update\nsudo apt install -y \\\n  build-essential \\\n  meson \\\n  ninja-build \\\n  valac \\\n  libwingpanel-dev \\\n  libsoup-3.0-dev \\\n  libjson-glib-dev \\\n  libgranite-7-dev \\\n  libgtk-3-dev \\\n  golang-go \\\n  weasyprint`}
                 </pre>
               </div>
             </div>
