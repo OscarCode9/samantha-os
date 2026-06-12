@@ -1,0 +1,98 @@
+/* ── Professional PDF Style ── */
+@page {
+    size: A4;
+    margin: 20mm 15mm 20mm 15mm;
+    @bottom-right {
+        content: counter(page) " / " counter(pages);
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        font-size: 9pt;
+        color: #64748b;
+    }
+    @top-left {
+        content: "Documento Oficial";
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        font-size: 8pt;
+        text-transform: uppercase;
+        color: #94a3b8;
+        letter-spacing: 1px;
+    }
+}
+
+body {
+    font-family: Georgia, serif;
+    font-size: 11pt;
+    line-height: 1.6;
+    color: #334155;
+    background-color: #ffffff;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: #0f172a;
+    font-weight: 700;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+    page-break-after: avoid;
+}
+
+h1 {
+    font-size: 24pt;
+    border-bottom: 2px solid #3b82f6;
+    padding-bottom: 8px;
+    margin-top: 0;
+    color: #1e3a8a;
+}
+
+h2 {
+    font-size: 16pt;
+    color: #1e40af;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 4px;
+}
+
+h3 {
+    font-size: 13pt;
+    color: #1e3a8a;
+}
+
+p {
+    margin-top: 0;
+    margin-bottom: 1em;
+}
+
+/* Elegant tables */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5em 0;
+    page-break-inside: avoid;
+}
+
+th {
+    background-color: #f1f5f9;
+    color: #0f172a;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-weight: 600;
+    text-align: left;
+    border-bottom: 2px solid #cbd5e1;
+    padding: 8px 12px;
+}
+
+td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+tr:nth-child(even) td {
+    background-color: #f8fafc;
+}
+
+/* Card layout wrapper */
+.card {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 16px;
+    margin-bottom: 16px;
+    page-break-inside: avoid;
+}

@@ -1,0 +1,115 @@
+/* ── Samantha Cozy-Futuristic PDF Style ── */
+@page {
+    size: A4;
+    margin: 22mm 18mm 22mm 18mm;
+    background-color: #fcf8f7; /* Very light warm cream background */
+    @bottom-right {
+        content: counter(page) " · " counter(pages);
+        font-family: "Space Mono", monospace;
+        font-size: 8pt;
+        color: #C44C35;
+    }
+    @top-left {
+        content: "Samantha OS Context Report";
+        font-family: "Space Mono", monospace;
+        font-size: 8pt;
+        color: #C44C35;
+        opacity: 0.7;
+    }
+}
+
+body {
+    font-family: "Space Grotesk", sans-serif;
+    font-size: 11pt;
+    line-height: 1.65;
+    color: #2c2523; /* Very dark brown-grey */
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: "Space Grotesk", sans-serif;
+    color: #C44C35; /* Warm Coral */
+    font-weight: 700;
+    margin-top: 1.6em;
+    margin-bottom: 0.6em;
+    page-break-after: avoid;
+}
+
+h1 {
+    font-size: 26pt;
+    border-bottom: 3px solid #C44C35;
+    padding-bottom: 12px;
+    margin-top: 0;
+    letter-spacing: -0.5px;
+}
+
+h2 {
+    font-size: 17pt;
+    border-bottom: 1px dashed rgba(196, 76, 53, 0.3);
+    padding-bottom: 6px;
+}
+
+h3 {
+    font-size: 13pt;
+    font-family: "Space Mono", monospace;
+}
+
+p {
+    margin-top: 0;
+    margin-bottom: 1.2em;
+}
+
+/* Rounded card wrapper with soft dot-grid background */
+.card {
+    background-color: #ffffff;
+    background-image: radial-gradient(rgba(196, 76, 53, 0.08) 1px, transparent 0);
+    background-size: 12px 12px;
+    border: 1px solid rgba(196, 76, 53, 0.18);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+    page-break-inside: avoid;
+    box-shadow: 0 4px 6px -1px rgba(196, 76, 53, 0.05);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5em 0;
+    page-break-inside: avoid;
+}
+
+th {
+    background-color: rgba(196, 76, 53, 0.06);
+    color: #C44C35;
+    font-family: "Space Mono", monospace;
+    font-size: 9.5pt;
+    font-weight: 700;
+    text-align: left;
+    border-bottom: 2px solid #C44C35;
+    padding: 10px 14px;
+}
+
+td {
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(196, 76, 53, 0.1);
+}
+
+tr:nth-child(even) td {
+    background-color: rgba(196, 76, 53, 0.02);
+}
+
+code, pre {
+    font-family: "Space Mono", monospace;
+    background-color: rgba(196, 76, 53, 0.05);
+    border: 1px solid rgba(196, 76, 53, 0.12);
+    border-radius: 6px;
+    padding: 2px 6px;
+    font-size: 9.5pt;
+}
+
+pre {
+    display: block;
+    padding: 14px;
+    margin: 1.5em 0;
+    white-space: pre-wrap;
+}

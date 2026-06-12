@@ -1,0 +1,116 @@
+/* ── Minimalist Cyberpunk (Dark Tech) PDF Style ── */
+@page {
+    size: A4;
+    margin: 20mm 15mm 20mm 15mm;
+    background-color: #050507; /* Matrix-like deep dark background */
+    @bottom-right {
+        content: "[ PAGE_" counter(page) " // " counter(pages) " ]";
+        font-family: "Space Mono", "Courier New", monospace;
+        font-size: 8pt;
+        color: #00ff66; /* Neon Green */
+    }
+    @top-left {
+        content: "SYS_STATUS: LOCAL_AGENTS_REPORT // DECRYPTED_";
+        font-family: "Space Mono", "Courier New", monospace;
+        font-size: 8pt;
+        color: #00f0ff; /* Neon Cyan */
+    }
+}
+
+body {
+    font-family: "Space Mono", "Courier New", monospace;
+    font-size: 10pt;
+    line-height: 1.5;
+    color: #a5b4fc; /* Soft indigo-purple body text */
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: #00f0ff; /* Neon Cyan */
+    font-weight: 700;
+    margin-top: 2em;
+    margin-bottom: 0.8em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    page-break-after: avoid;
+}
+
+h1 {
+    font-size: 20pt;
+    border: 1px solid #00f0ff;
+    padding: 12px 18px;
+    margin-top: 0;
+    background-color: rgba(0, 240, 255, 0.05);
+    color: #00ff66; /* Neon Green title */
+}
+
+h2 {
+    font-size: 14pt;
+    border-bottom: 2px dashed #00f0ff;
+    padding-bottom: 4px;
+}
+
+h3 {
+    font-size: 11pt;
+    color: #f43f5e; /* Cyber Pink */
+}
+
+p {
+    margin-top: 0;
+    margin-bottom: 1em;
+}
+
+/* Card layout wrapper resembling tech dashboard terminals */
+.card {
+    background-color: #0c0a0f;
+    border-left: 4px solid #00ff66;
+    border-top: 1px solid rgba(0, 255, 102, 0.2);
+    border-right: 1px solid rgba(0, 255, 102, 0.2);
+    border-bottom: 1px solid rgba(0, 255, 10 green, 0.2);
+    border-radius: 0;
+    padding: 16px;
+    margin-bottom: 20px;
+    page-break-inside: avoid;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5em 0;
+    page-break-inside: avoid;
+}
+
+th {
+    background-color: #0c0a0f;
+    color: #00ff66;
+    font-weight: 700;
+    text-align: left;
+    border: 1px solid rgba(0, 255, 102, 0.4);
+    padding: 8px 12px;
+}
+
+td {
+    padding: 8px 12px;
+    border: 1px solid rgba(0, 240, 255, 0.15);
+    background-color: rgba(5, 5, 7, 0.5);
+}
+
+tr:nth-child(even) td {
+    background-color: rgba(12, 10, 15, 0.7);
+}
+
+code, pre {
+    font-family: "Space Mono", "Courier New", monospace;
+    background-color: #09090b;
+    border: 1px solid rgba(244, 63, 94, 0.3);
+    color: #f43f5e; /* Cyber Pink code block */
+    border-radius: 0;
+    padding: 2px 6px;
+}
+
+pre {
+    display: block;
+    padding: 12px;
+    margin: 1.5em 0;
+    white-space: pre-wrap;
+    border-left: 2px solid #f43f5e;
+}
