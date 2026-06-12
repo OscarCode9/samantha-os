@@ -25,6 +25,7 @@ interface ToolData {
 const CATEGORIES = [
   'Overview',
   'Quick Start',
+  'Default Skills',
   'Files & Directories',
   'System & OS Control',
   'Productivity Suite',
@@ -1046,6 +1047,7 @@ export default function Docs() {
     switch (cat) {
       case 'Overview': return isEs ? 'Introducción' : 'Overview';
       case 'Quick Start': return isEs ? 'Guía Rápida' : 'Quick Start';
+      case 'Default Skills': return isEs ? 'Habilidades por Defecto' : 'Default Skills';
       case 'Files & Directories': return isEs ? 'Archivos y Directorios' : 'Files & Directories';
       case 'System & OS Control': return isEs ? 'Control de Sistema' : 'System & OS Control';
       case 'Productivity Suite': return isEs ? 'Productividad' : 'Productivity Suite';
@@ -1058,7 +1060,7 @@ export default function Docs() {
   // Filter tools based on query & category
   const filteredTools = useMemo(() => {
     let list = TOOLS_DATA;
-    if (selectedCategory !== 'Overview' && selectedCategory !== 'Quick Start') {
+    if (selectedCategory !== 'Overview' && selectedCategory !== 'Quick Start' && selectedCategory !== 'Default Skills') {
       list = list.filter(t => t.category === selectedCategory);
     }
     if (searchQuery.trim() !== '') {
@@ -1279,6 +1281,124 @@ export default function Docs() {
                   {`# Navigate to panel directory\ncd panel-sam\n\n# Configure build system with system prefix\nmeson setup build --prefix=/usr\n\n# Compile the project\nninja -C build\n\n# Install the indicator module\nsudo ninja -C build install\n\n# Restart Wingpanel to load the new indicator\nkillall io.elementary.wingpanel`}
                 </pre>
               </div>
+            </div>
+          </div>
+        ) : selectedCategory === 'Default Skills' && !searchQuery ? (
+          <div className="docs-skills animate-fade-in">
+            <div className="label">{currentLang === 'es' ? 'Habilidades' : 'Skills'}</div>
+            <h1 className="docs-title">
+              {currentLang === 'es' ? 'Habilidades por Defecto' : 'Default Agent Skills'}
+            </h1>
+            
+            <p className="docs-lead">
+              {currentLang === 'es'
+                ? 'Samantha OS viene equipada con habilidades (Skills) integradas que extienden las capacidades cognitivas del asistente de IA. Le permiten realizar tareas complejas en el sistema, adaptarse a diferentes flujos de trabajo y seguir las guías oficiales de elementary OS.'
+                : 'Samantha OS comes equipped with built-in skills that extend the AI assistant\'s cognitive capabilities. They enable it to perform complex tasks on the system, adapt to different workflows, and follow official elementary OS guidelines.'}
+            </p>
+
+            <div className="overview-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h3 style={{ margin: 0, fontFamily: 'Space Mono, monospace', fontWeight: 'bold' }}>pdf-generator</h3>
+                <span className="tool-badge" style={{ background: 'rgba(99, 102, 241, 0.2)', color: '#818cf8', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>
+                  {currentLang === 'es' ? 'Preinstalado' : 'Pre-installed'}
+                </span>
+              </div>
+              <p>
+                {currentLang === 'es'
+                  ? 'Genera documentos PDF de alta calidad profesional y diseño premium a partir de HTML y CSS utilizando WeasyPrint. Soporta 5 plantillas exclusivas:'
+                  : 'Generates high-quality, professionally designed PDF documents from HTML and CSS templates using WeasyPrint. Includes 5 exclusive styles:'}
+              </p>
+              <ul style={{ marginTop: '12px', paddingLeft: '20px', color: 'rgba(255,255,255,0.7)', lineHeight: '1.6' }}>
+                <li><strong>Professional:</strong> {currentLang === 'es' ? 'Diseño corporativo en azul marino y tipografía serif.' : 'Corporate layout in navy blue with serif typography.'}</li>
+                <li><strong>Samantha:</strong> {currentLang === 'es' ? 'Estilo acogedor y moderno con tonos coral y bordes redondeados.' : 'Cozy, modern brand theme with coral tones and rounded cards.'}</li>
+                <li><strong>Cyberpunk:</strong> {currentLang === 'es' ? 'Modo oscuro de alto contraste con acentos neón cian/verde.' : 'High-contrast dark mode with neon cyan and green accents.'}</li>
+                <li><strong>Acid Gradient:</strong> {currentLang === 'es' ? 'Diseño fluido con gradientes rosa, violeta y amarillo neón.' : 'Fluid design with pink, violet, and neon yellow gradients.'}</li>
+                <li><strong>Brutalist:</strong> {currentLang === 'es' ? 'Estilo raw monocromático con bordes gruesos y acentos rojos.' : 'Raw monochromatic layout with thick borders and red highlights.'}</li>
+              </ul>
+            </div>
+
+            <div className="overview-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h3 style={{ margin: 0, fontFamily: 'Space Mono, monospace', fontWeight: 'bold' }}>compile-samantha</h3>
+                <span className="tool-badge" style={{ background: 'rgba(99, 102, 241, 0.2)', color: '#818cf8', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>
+                  {currentLang === 'es' ? 'Preinstalado' : 'Pre-installed'}
+                </span>
+              </div>
+              <p>
+                {currentLang === 'es'
+                  ? 'Guía interactiva para compilar, instalar y solucionar problemas de todos los componentes del sistema operativo: el motor Go (claw), el indicador de la barra superior (panel-sam), y el asistente de configuración inicial.'
+                  : 'Interactive guide to compile, install, and troubleshoot all components of the operating system: the Go engine runtime (claw), the top bar indicator (panel-sam), and the initial setup wizard.'}
+              </p>
+            </div>
+
+            <div className="overview-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h3 style={{ margin: 0, fontFamily: 'Space Mono, monospace', fontWeight: 'bold' }}>wingpanel-indicator</h3>
+                <span className="tool-badge" style={{ background: 'rgba(99, 102, 241, 0.2)', color: '#818cf8', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>
+                  {currentLang === 'es' ? 'Preinstalado' : 'Pre-installed'}
+                </span>
+              </div>
+              <p>
+                {currentLang === 'es'
+                  ? 'Proporciona las herramientas, especificaciones y reglas para compilar, diseñar y desplegar indicadores GTK3 para la barra superior (Wingpanel) de elementary OS.'
+                  : 'Provides resources, specs, and rules to build, style, and deploy GTK3 panel indicators for the elementary OS Wingpanel.'}
+              </p>
+            </div>
+
+            <div className="overview-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h3 style={{ margin: 0, fontFamily: 'Space Mono, monospace', fontWeight: 'bold' }}>elementary-hig</h3>
+                <span className="tool-badge" style={{ background: 'rgba(99, 102, 241, 0.2)', color: '#818cf8', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>
+                  {currentLang === 'es' ? 'Preinstalado' : 'Pre-installed'}
+                </span>
+              </div>
+              <p>
+                {currentLang === 'es'
+                  ? 'Permite a Samantha evaluar y diseñar interfaces siguiendo las Guías de Interfaz Humana (HIG) oficiales de elementary OS para garantizar que las aplicaciones creadas luzcan nativas.'
+                  : 'Allows Samantha to evaluate and design user interfaces following the official elementary OS Human Interface Guidelines (HIG) to ensure all created applications look native.'}
+              </p>
+            </div>
+
+            <div className="overview-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h3 style={{ margin: 0, fontFamily: 'Space Mono, monospace', fontWeight: 'bold' }}>nothing-design</h3>
+                <span className="tool-badge" style={{ background: 'rgba(99, 102, 241, 0.2)', color: '#818cf8', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>
+                  {currentLang === 'es' ? 'Preinstalado' : 'Pre-installed'}
+                </span>
+              </div>
+              <p>
+                {currentLang === 'es'
+                  ? 'Reglas y tokens de diseño para aplicar el sistema de diseño Brutalista monocromático (inspirado en la marca Nothing) a aplicaciones, componentes web e interfaces.'
+                  : 'Design rules and design tokens to apply the brutalist monochromatic design system (inspired by the Nothing brand) to applications, web components, and user interfaces.'}
+              </p>
+            </div>
+
+            <div className="overview-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h3 style={{ margin: 0, fontFamily: 'Space Mono, monospace', fontWeight: 'bold' }}>dna-intro-animation</h3>
+                <span className="tool-badge" style={{ background: 'rgba(99, 102, 241, 0.2)', color: '#818cf8', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>
+                  {currentLang === 'es' ? 'Preinstalado' : 'Pre-installed'}
+                </span>
+              </div>
+              <p>
+                {currentLang === 'es'
+                  ? 'Instrucciones y helpers matemáticos para portar animaciones de lienzo/WebGL (como hélices de ADN dinámicas) a widgets nativos GTK4 Cairo DrawingArea con actualizaciones continuas.'
+                  : 'Instructions and mathematical helpers to port canvas/WebGL animations (such as dynamic DNA helices) to native GTK4 Cairo DrawingArea widgets with frame-tick updates.'}
+              </p>
+            </div>
+
+            <div className="overview-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h3 style={{ margin: 0, fontFamily: 'Space Mono, monospace', fontWeight: 'bold' }}>samantha-server-deploy</h3>
+                <span className="tool-badge" style={{ background: 'rgba(99, 102, 241, 0.2)', color: '#818cf8', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>
+                  {currentLang === 'es' ? 'Preinstalado' : 'Pre-installed'}
+                </span>
+              </div>
+              <p>
+                {currentLang === 'es'
+                  ? 'Instrucciones y flujos para desplegar o actualizar de manera segura la infraestructura de red, balanceadores de carga (ALB), dominios Hostinger, contenedores proxy Nginx y archivos estáticos del sitio web.'
+                  : 'Instructions and workflows to safely deploy or update the network infrastructure, load balancers (ALB), Hostinger domains, Nginx proxy containers, and website static files.'}
+              </p>
             </div>
           </div>
         ) : (
