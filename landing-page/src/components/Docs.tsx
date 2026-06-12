@@ -1198,6 +1198,27 @@ export default function Docs() {
             </p>
 
             <div className="overview-card">
+              <h3>{t('docs.quickstartStep0Title')}</h3>
+              <p style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '16px' }}>
+                {t('docs.quickstartStep0Desc')}
+              </p>
+              <div>
+                <div className="example-header" style={{ marginBottom: '8px' }}>
+                  <span className="code-label label">BASH</span>
+                  <button 
+                    onClick={() => copyToClipboard('git clone https://github.com/OscarCode9/samantha-os.git && cd samantha-os', 'clone-cmd')}
+                    className="copy-btn font-mono"
+                  >
+                    {copiedText === 'clone-cmd' ? t('docs.copied') : t('docs.copyArgs')}
+                  </button>
+                </div>
+                <pre style={{ background: 'rgba(0, 0, 0, 0.25)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: '8px', padding: '16px', fontSize: '13px', overflowX: 'auto', color: '#ECEFF1', fontFamily: 'Space Mono, monospace' }}>
+                  {`git clone https://github.com/OscarCode9/samantha-os.git\ncd samantha-os`}
+                </pre>
+              </div>
+            </div>
+
+            <div className="overview-card">
               <h3>{t('docs.quickstartStep1Title')}</h3>
               <p style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '16px' }}>
                 {t('docs.quickstartStep1Desc')}
