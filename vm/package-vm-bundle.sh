@@ -24,8 +24,8 @@ tar -czf "$ARCHIVE_PATH" \
   --exclude='panel-sam/voice-bridge/.venv' \
   --exclude='._*' \
   --exclude='vm/dist' \
-  -s ',^,elementary-claw-vm/,' \
   -C "$ROOT_DIR" \
+  .agents \
   go.mod \
   go.sum \
   initial-setup-vm-runbook.md \
