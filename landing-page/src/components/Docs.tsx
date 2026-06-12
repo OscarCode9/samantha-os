@@ -1319,85 +1319,113 @@ export default function Docs() {
 
             <div className="overview-card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <h3 style={{ margin: 0, fontFamily: 'Space Mono, monospace', fontWeight: 'bold' }}>compile-samantha</h3>
+                <h3 style={{ margin: 0, fontFamily: 'Space Mono, monospace', fontWeight: 'bold' }}>theme-factory</h3>
                 <span className="tool-badge" style={{ background: 'rgba(99, 102, 241, 0.2)', color: '#818cf8', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>
                   {currentLang === 'es' ? 'Preinstalado' : 'Pre-installed'}
                 </span>
               </div>
               <p>
                 {currentLang === 'es'
-                  ? 'Guía interactiva para compilar, instalar y solucionar problemas de todos los componentes del sistema operativo: el motor Go (claw), el indicador de la barra superior (panel-sam), y el asistente de configuración inicial.'
-                  : 'Interactive guide to compile, install, and troubleshoot all components of the operating system: the Go engine runtime (claw), the top bar indicator (panel-sam), and the initial setup wizard.'}
+                  ? 'Permite aplicar paletas de colores y tipografías curadas mediante 10 temas visuales preconfigurados a diapositivas, reportes, sitios HTML estáticos o cualquier tipo de documento de salida.'
+                  : 'Enables applying curated color palettes and typographies across 10 pre-configured visual themes to slides, reports, static HTML sites, or any output document.'}
               </p>
             </div>
 
             <div className="overview-card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <h3 style={{ margin: 0, fontFamily: 'Space Mono, monospace', fontWeight: 'bold' }}>wingpanel-indicator</h3>
+                <h3 style={{ margin: 0, fontFamily: 'Space Mono, monospace', fontWeight: 'bold' }}>canvas-design</h3>
                 <span className="tool-badge" style={{ background: 'rgba(99, 102, 241, 0.2)', color: '#818cf8', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>
                   {currentLang === 'es' ? 'Preinstalado' : 'Pre-installed'}
                 </span>
               </div>
               <p>
                 {currentLang === 'es'
-                  ? 'Proporciona las herramientas, especificaciones y reglas para compilar, diseñar y desplegar indicadores GTK3 para la barra superior (Wingpanel) de elementary OS.'
-                  : 'Provides resources, specs, and rules to build, style, and deploy GTK3 panel indicators for the elementary OS Wingpanel.'}
+                  ? 'Habilidad de diseño visual para crear posters, composiciones artísticas estáticas e imágenes en PNG y PDF a partir de especificaciones de diseño y geometría limpia.'
+                  : 'Visual design skill to create posters, static artistic compositions, and images in PNG and PDF formats based on layout and clean geometry specs.'}
               </p>
             </div>
 
             <div className="overview-card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <h3 style={{ margin: 0, fontFamily: 'Space Mono, monospace', fontWeight: 'bold' }}>elementary-hig</h3>
-                <span className="tool-badge" style={{ background: 'rgba(99, 102, 241, 0.2)', color: '#818cf8', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>
+                <h3 style={{ margin: 0, fontFamily: 'Space Mono, monospace', fontWeight: 'bold' }}>doc-coauthoring</h3>
+                <span className="tool-badge" style={{ background: 'rgba(99, 102, 241, 0.2', color: '#818cf8', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>
                   {currentLang === 'es' ? 'Preinstalado' : 'Pre-installed'}
                 </span>
               </div>
               <p>
                 {currentLang === 'es'
-                  ? 'Permite a Samantha evaluar y diseñar interfaces siguiendo las Guías de Interfaz Humana (HIG) oficiales de elementary OS para garantizar que las aplicaciones creadas luzcan nativas.'
-                  : 'Allows Samantha to evaluate and design user interfaces following the official elementary OS Human Interface Guidelines (HIG) to ensure all created applications look native.'}
+                  ? 'Guía un flujo estructurado de co-creación de documentos y textos (propuestas, especificaciones técnicas, borradores y reportes) refinando el contenido mediante iteración continua.'
+                  : 'Guides a structured document and text co-authoring workflow (proposals, technical specs, drafts, and reports), refining content through continuous iteration.'}
               </p>
             </div>
 
             <div className="overview-card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <h3 style={{ margin: 0, fontFamily: 'Space Mono, monospace', fontWeight: 'bold' }}>nothing-design</h3>
+                <h3 style={{ margin: 0, fontFamily: 'Space Mono, monospace', fontWeight: 'bold' }}>skill-creator</h3>
                 <span className="tool-badge" style={{ background: 'rgba(99, 102, 241, 0.2)', color: '#818cf8', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>
                   {currentLang === 'es' ? 'Preinstalado' : 'Pre-installed'}
                 </span>
               </div>
               <p>
                 {currentLang === 'es'
-                  ? 'Reglas y tokens de diseño para aplicar el sistema de diseño Brutalista monocromático (inspirado en la marca Nothing) a aplicaciones, componentes web e interfaces.'
-                  : 'Design rules and design tokens to apply the brutalist monochromatic design system (inspired by the Nothing brand) to applications, web components, and user interfaces.'}
+                  ? 'Habilidad de autodesarrollo que permite al agente crear nuevas habilidades desde cero, editar y mejorar las existentes, probarlas con evaluaciones y optimizar sus descripciones de activación.'
+                  : 'Self-development skill that enables the agent to create new skills from scratch, edit and improve existing ones, test them with benchmarks, and optimize triggering rules.'}
               </p>
             </div>
 
             <div className="overview-card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <h3 style={{ margin: 0, fontFamily: 'Space Mono, monospace', fontWeight: 'bold' }}>dna-intro-animation</h3>
+                <h3 style={{ margin: 0, fontFamily: 'Space Mono, monospace', fontWeight: 'bold' }}>web-artifacts-builder</h3>
                 <span className="tool-badge" style={{ background: 'rgba(99, 102, 241, 0.2)', color: '#818cf8', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>
                   {currentLang === 'es' ? 'Preinstalado' : 'Pre-installed'}
                 </span>
               </div>
               <p>
                 {currentLang === 'es'
-                  ? 'Instrucciones y helpers matemáticos para portar animaciones de lienzo/WebGL (como hélices de ADN dinámicas) a widgets nativos GTK4 Cairo DrawingArea con actualizaciones continuas.'
-                  : 'Instructions and mathematical helpers to port canvas/WebGL animations (such as dynamic DNA helices) to native GTK4 Cairo DrawingArea widgets with frame-tick updates.'}
+                  ? 'Permite construir interfaces web complejas de varios componentes interactivos y estados usando tecnologías modernas como React, Tailwind CSS y componentes shadcn/ui.'
+                  : 'Enables building complex web interfaces with multiple interactive components and state management using modern tools like React, Tailwind CSS, and shadcn/ui.'}
               </p>
             </div>
 
             <div className="overview-card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <h3 style={{ margin: 0, fontFamily: 'Space Mono, monospace', fontWeight: 'bold' }}>samantha-server-deploy</h3>
+                <h3 style={{ margin: 0, fontFamily: 'Space Mono, monospace', fontWeight: 'bold' }}>webapp-testing</h3>
                 <span className="tool-badge" style={{ background: 'rgba(99, 102, 241, 0.2)', color: '#818cf8', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>
                   {currentLang === 'es' ? 'Preinstalado' : 'Pre-installed'}
                 </span>
               </div>
               <p>
                 {currentLang === 'es'
-                  ? 'Instrucciones y flujos para desplegar o actualizar de manera segura la infraestructura de red, balanceadores de carga (ALB), dominios Hostinger, contenedores proxy Nginx y archivos estáticos del sitio web.'
-                  : 'Instructions and workflows to safely deploy or update the network infrastructure, load balancers (ALB), Hostinger domains, Nginx proxy containers, and website static files.'}
+                  ? 'Conjunto de herramientas para interactuar y realizar pruebas automáticas de aplicaciones web locales mediante Playwright, capturando pantallas y logs de depuración.'
+                  : 'Toolkit to interact with and perform automated testing of local web applications using Playwright, capturing screenshots and browser logs.'}
+              </p>
+            </div>
+
+            <div className="overview-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h3 style={{ margin: 0, fontFamily: 'Space Mono, monospace', fontWeight: 'bold' }}>mcp-builder</h3>
+                <span className="tool-badge" style={{ background: 'rgba(99, 102, 241, 0.2)', color: '#818cf8', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>
+                  {currentLang === 'es' ? 'Preinstalado' : 'Pre-installed'}
+                </span>
+              </div>
+              <p>
+                {currentLang === 'es'
+                  ? 'Guía interactiva para programar y publicar nuevos servidores Model Context Protocol (MCP) que conectan herramientas y APIs a modelos de lenguaje usando Python (FastMCP) o TypeScript.'
+                  : 'Interactive guide to write and publish new Model Context Protocol (MCP) servers to connect tools and APIs to language models using Python (FastMCP) or TypeScript.'}
+              </p>
+            </div>
+
+            <div className="overview-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h3 style={{ margin: 0, fontFamily: 'Space Mono, monospace', fontWeight: 'bold' }}>algorithmic-art</h3>
+                <span className="tool-badge" style={{ background: 'rgba(99, 102, 241, 0.2)', color: '#818cf8', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>
+                  {currentLang === 'es' ? 'Preinstalado' : 'Pre-installed'}
+                </span>
+              </div>
+              <p>
+                {currentLang === 'es'
+                  ? 'Creación de arte algorítmico y generativo usando p5.js con aleatoriedad controlada, flujos de partículas y campos dinámicos para explorar parámetros visuales complejos.'
+                  : 'Creation of algorithmic and generative art using p5.js with controlled seed randomness, particle flows, and dynamic fields to explore complex visual parameters.'}
               </p>
             </div>
           </div>
